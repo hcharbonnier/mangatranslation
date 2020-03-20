@@ -1,4 +1,6 @@
 <?php
+use Google\Cloud\Vision\V1\ImageAnnotatorClient;
+use Google\Cloud\Translate\TranslateClient;
 
 //translate text
 function translate ($text,$targetLanguage){
