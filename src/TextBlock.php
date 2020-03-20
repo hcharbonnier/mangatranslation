@@ -1,7 +1,7 @@
 <?php 
 namespace mangatranslation;
 
-require __DIR__ . '/vendor/autoload.php';
+#require __DIR__ . '/vendor/autoload.php';
 
 # imports the Google Cloud client library
 use Google\Cloud\Vision\V1\ImageAnnotatorClient;
