@@ -31,7 +31,7 @@ class TextBlock {
     public $formatted_text;
     public $font_size=20;
     public $text_angle=0;
-    public $font="fonts/animeace2_reg.ttf";
+    public $font=__DIR__."/../fonts/animeace2_reg.ttf";
 
     function __construct($mother_path,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4) {
         $this->x1 = $x1;
