@@ -1,5 +1,5 @@
 <?php 
-namespace textblock;
+namespace mangatranslation;
 
 require __DIR__ . '/vendor/autoload.php';
 

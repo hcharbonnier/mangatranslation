@@ -16,7 +16,7 @@
     },
     "autoload": {
         "psr-0": {
-            "mangatranslation": "src/",
-            "textblock": "src/"
+            "mangatranslation": "src/"
         }
+    }
 }
