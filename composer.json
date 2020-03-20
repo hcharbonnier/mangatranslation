@@ -15,8 +15,8 @@
          "google/cloud-translate":"^1.7.1"
     },
     "autoload": {
-        "psr-0": {
-            "mangatranslation": "src/"
+        "psr-4": {
+            "mangatranslation\\": "src/"
         }
     }
 }
