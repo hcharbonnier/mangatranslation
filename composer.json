@@ -1,0 +1,22 @@
+{
+    "name": "hcharbonnier/mangatranslation",
+    "description": "PHP manga automatic translator (Works with Google Cloud Platform)",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Hugues CHARBONNIER",
+            "email": "hugues.charbonnier@gmail.com"
+        }
+    ],    "license": "GPL V3",
+    "minimum-stability": "dev",
+    "require": {
+         "google/cloud-vision": "^0.24.0",
+         "ksubileau/color-thief-php":"^1.4.1",
+         "google/cloud-translate":"^1.7.1"
+    },
+    "autoload": {
+        "psr-0": {
+            "mangatranslation": "src/",
+            "textblock": "src/"
+        }
+}
