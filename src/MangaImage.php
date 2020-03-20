@@ -45,7 +45,11 @@ class MangaImage
     $this->response = $imageAnnotator->textDetection($this->image);
     $this->annotation = $this->response->getFullTextAnnotation();
     $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
+    $this->draw_boxes2($this->path);
+
     $this->merge_similar_bloc();
+    $this->draw_boxes2($this->path,1,2);
+
     
     foreach ($this->text_blocks as $text_block) {
         $text_block->load();
@@ -158,7 +162,32 @@ class MangaImage
         imageline ( $image ,  $vertices[3]->getX() ,  $vertices[3]->getY(),  $vertices[0]->getX() ,  $vertices[0]->getY() , $color );
         }
     $this->image_drawn=$image;
+    @imagejpeg($this->image_drawn,'./dump/boxes.jpg');
   }
+
+  function draw_boxes2 ($fileName, $color=0, $offset=0) {
+
+    $image = imagecreatefromjpeg($fileName);
+
+    $black = imagecolorallocate($image, 0, 0, 0);
+    $red = imagecolorallocate($image, 255, 0, 0);
+
+    if ($color == 0 )
+      $linecolor=$black;
+    else
+      $linecolor=$red;
+
+    foreach($this->text_blocks as $text_block) {
+        imageline ( $image ,  $text_block->x1 -$offset, $text_block->y1 -$offset, $text_block->x2 +$offset, $text_block->y2 -$offset, $linecolor);
+        imageline ( $image ,  $text_block->x2 +$offset, $text_block->y2 -$offset, $text_block->x3 +$offset , $text_block->y3+$offset , $linecolor);
+        imageline ( $image ,  $text_block->x3 +$offset, $text_block->y3+$offset , $text_block->x4 -$offset, $text_block->y4+$offset , $linecolor);
+        imageline ( $image ,  $text_block->x4 -$offset , $text_block->y4 +$offset, $text_block->x1 -$offset, $text_block->y1-$offset , $linecolor);
+         
+    }
+    $this->image_drawn=$image;
+    @imagejpeg($this->image_drawn,"./dump/boxes$color.jpg");
+  }
+  
 
   /*function extract_bounds($fileName,$bounds) {
     $image = imagecreatefromjpeg($fileName);
@@ -205,6 +234,7 @@ class MangaImage
   function merge_similar_bloc($tolerance=25){
       $new_blocks=[];
       foreach($this->text_blocks as $text_block){
+        //echo "#############################################################################################\n";
         $x1=$text_block->x1;
         $y1=$text_block->y1;
         $x2=$text_block->x2;
@@ -218,6 +248,7 @@ class MangaImage
         $avgx_top=($x1+$x2)/2;
         $avgy_top=($y1+$y2)/2;
 
+        //echo "x1:$x1 y1:$y1 x2:$x2 y2:$y2 x3:$x3 y3:$y3 x4:$x4 y4:$y4  avgx_bottom:$avgx_bottom avgy_bottom:$avgy_bottom avgx_to:$avgx_top avgy_to:$avgy_top \n";
         if (! isset($px1)) {
             $px1 = $x1;
             $py1 = $y1;
@@ -232,9 +263,12 @@ class MangaImage
             $pavgx_top=$avgx_top;
             $pavgy_top=$avgy_top;
         } else {
+            //echo "px1:$px1 py1:$py1 px2:$px2 py2:$py2 px3:$px3 py3:$py3 px4:$px4 py4:$py4  pavgx_bottom:$pavgx_bottom pavgy_bottom:$pavgy_bottom pavgx_top:$pavgx_top pavgy_top:$pavgy_top \n";
             $block_distance_y=$avgy_top-$pavgy_bottom;
-            if ((($block_distance_y < $tolerance) && ($block_distance_y >0)) && (($px4 -$tolerance < $x1) && ($px3+$tolerance > $x2)) || (($px4 +$tolerance> $x1) && ($px3 -$tolerance < $x2)))
+            //echo "block_distance_y:$block_distance_y\n";
+            if ((($block_distance_y < $tolerance) && ($block_distance_y >0)) && ((($px4 -$tolerance < $x1) && ($px3+$tolerance > $x2)) || (($px4 +$tolerance> $x1) && ($px3 -$tolerance < $x2))))
                 {
+                //echo "same block\n";
                 // both x and y says it is the same block
                 $px1=(min($x1,$px1));
                 $py1=$py1;
@@ -247,7 +281,7 @@ class MangaImage
                 $pavgx_bottom=($px4+$px3)/2;
                 $pavgy_bottom=($py4+$py3)/2;
                 $pavgx_top=($px1+$px2)/2;
-                $pavgy_top=($py1+$py2)/2;       
+                $pavgy_top=($py1+$py2)/2;
                 } else {
                     array_push($new_blocks,new TextBlock($this->path, $px1,$py1,$px2,$py2,$px3,$py3,$px4,$py4));
                     $px1 = $x1;
@@ -274,6 +308,7 @@ class MangaImage
     $this->final_image = imagecreatefromjpeg($this->clean_path);
     foreach ($this->text_blocks as $block) {
         $black = imagecolorallocate($this->final_image, 0, 0, 0);
+        $red = imagecolorallocate($this->final_image, 255, 0, 0);
 
         $translation_width=$block->translation_width;
         $translation_height=$block->translation_height;
@@ -281,12 +316,20 @@ class MangaImage
         $block_center_x=($block->x1+$block->x2+$block->x3+$block->x4)/4;
         $block_center_y=($block->y1+$block->y2+$block->y3+$block->y4)/4;
 
+        
+        //imageline (  $this->final_image ,  $block_center_x -60 , $block_center_y , $block_center_x+60 , $block_center_y ,  $red );
+        //imageline (  $this->final_image ,  $block_center_x , $block_center_y -60, $block_center_x , $block_center_y +60,  $red );
+
         //Coordonates to place text centered
         $insert_x=$block_center_x-($translation_width/2);
-        $insert_y=$block_center_y-($translation_height/2);
-        
+        $insert_y=$block_center_y-($translation_height/2)+$block->translation_top_offset;
+        //imageline (  $this->final_image ,  $insert_x -60 , $insert_y , $insert_x+60 , $insert_y ,  $black );
+        //imageline (  $this->final_image ,  $insert_x , $insert_y -60, $insert_x , $insert_y +60,  $black );
+        //echo "translation_width:$translation_width translation_height:$translation_height block->translation_top_offset:".$block->translation_top_offset."\n";
 
-          imagettftext (
+        //$insert_y=$block_center_y+($translation_height/2);
+
+        imagettftext (
               $this->final_image,
               $block->font_size,
               $block->text_angle,

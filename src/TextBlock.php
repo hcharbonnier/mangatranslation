@@ -34,6 +34,8 @@ class TextBlock {
     public $text_angle=0;
     public $translation_width;
     public $translation_height;
+    public $translation_top_offset;
+    public $translation_left_offset;
     public $original_font_size;
 
     public $font=__DIR__."/../fonts/animeace2_reg.ttf";
@@ -74,6 +76,8 @@ class TextBlock {
         $formatted_text=format_text(min($this->x2-$this->x1,$this->x3-$this->x4 ),min($this->y4-$this->y1, $this->y3-$this->y2), $this->text_angle, $this->font, $this->font_size, $this->translated_text,11);
         $this->translation_width = $formatted_text['width_px'];
         $this->translation_height = $formatted_text['height_px'];
+        $this->translation_top_offset= $formatted_text['top'];
+        $this->translation_left_offset = $formatted_text['left'];
         $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
         //echo($this->formatted_text);
         $this->font_size=$formatted_text['size'];
