@@ -13,43 +13,6 @@ function translate ($text,$targetLanguage){
   return($result["text"]);
 }
 
-// OCR text from image path
-function detect_text($path)
-{
-  $resultats=array();
-  $j=0;
-  $imageAnnotator = new ImageAnnotatorClient();
-
-  # annotate the image
-  $image = file_get_contents($path);
-  $response = $imageAnnotator->textDetection($image);
-  $texts = $response->getTextAnnotations();
-  $i=0;
-  foreach ($texts as $text) {
-      if ($i == 0) {
-        $string=$text->getDescription();
-        foreach ($text->getBoundingPoly()->getVertices() as $vertex) {
-          $x=$vertex->getX();
-        break;
-        }
-        $resultats[$j][0]=$x;
-        $resultats[$j][1]=$string;
-      }
-      $j++;
-      $i++;
-  }
-  $imageAnnotator->close();
-  sort($resultats);
-  $res="";
-  for ($k=0 ; isset($resultats[$k]) ; $k++){
-    $res.=' '.$resultats[$k][1];
-  }
-  $order=array("\r\n", "\n", "\r");
-  $res=trim(str_replace($order, ' ', $res));
-  $res=str_replace('  ', ' ', $res);
-  return trim($res);
-}
-
 //Calculate dimension of image generated from a string
 function calculateTextBox($font_size, $font_angle, $font_file, $text) {
   $box   = imagettfbbox($font_size, $font_angle, $font_file, $text);
@@ -100,6 +63,8 @@ function format_text($width, $height, $angle, $font, $font_size, $text,$border=0
     $width=max($width-(2*$border), 2*$border+8);
     $height=max($height-(2*$border), 2*$border+8);
     $dim["height"]=$height;
+    if ($font_size <=5)
+      $font_size=6;
     while (( $dim["height"]  >= $height ) && ($font_size > 5)) {
         $image = imagecreatetruecolor($width, $height);
         $ori=$image;
@@ -142,6 +107,8 @@ function format_text($width, $height, $angle, $font, $font_size, $text,$border=0
         $resultat['font']=$font;
         $resultat['text']=$text_res;
         $resultat['size']=$size;
+        $resultat['width_px']=$dim['width'];
+        $resultat['height_px']=$dim['height'];
         $font_size--;
     }
   return $resultat;

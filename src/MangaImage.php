@@ -45,8 +45,13 @@ class MangaImage
     $this->response = $imageAnnotator->textDetection($this->image);
     $this->annotation = $this->response->getFullTextAnnotation();
     $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
+    $this->merge_similar_bloc();
+    
+    foreach ($this->text_blocks as $text_block) {
+        $text_block->load();
+    }
     $this->clean_image();
-    $this->write_translation();
+    $this->insert_translations();
     //$this->draw_boxes($this->path,$this->bounds);
     //$this->extract_bounds($this->path,$this->bounds);
   }
@@ -197,18 +202,96 @@ class MangaImage
       }
   }
 
+  function merge_similar_bloc($tolerance=25){
+      $new_blocks=[];
+      foreach($this->text_blocks as $text_block){
+        $x1=$text_block->x1;
+        $y1=$text_block->y1;
+        $x2=$text_block->x2;
+        $y2=$text_block->y2;
+        $x3=$text_block->x3;
+        $y3=$text_block->y3;
+        $x4=$text_block->x4;
+        $y4=$text_block->y4;
+        $avgx_bottom=($x4+$x3)/2;
+        $avgy_bottom=($y4+$y3)/2;
+        $avgx_top=($x1+$x2)/2;
+        $avgy_top=($y1+$y2)/2;
+
+        if (! isset($px1)) {
+            $px1 = $x1;
+            $py1 = $y1;
+            $px2 = $x2;
+            $py2 = $y2;
+            $px3 = $x3;
+            $py3 = $y3;
+            $px4 = $x4;
+            $py4 = $y4;
+            $pavgx_bottom=$avgx_bottom;
+            $pavgy_bottom=$avgy_bottom;
+            $pavgx_top=$avgx_top;
+            $pavgy_top=$avgy_top;
+        } else {
+            $block_distance_y=$avgy_top-$pavgy_bottom;
+            if ((($block_distance_y < $tolerance) && ($block_distance_y >0)) && (($px4 -$tolerance < $x1) && ($px3+$tolerance > $x2)) || (($px4 +$tolerance> $x1) && ($px3 -$tolerance < $x2)))
+                {
+                // both x and y says it is the same block
+                $px1=(min($x1,$px1));
+                $py1=$py1;
+                $px2=(max($x2,$px2));
+                $py2=$py2;
+                $px3=(max($x3,$px3));
+                $py3=$y3;
+                $px4=(min($x4,$px4));
+                $py4=$y4;
+                $pavgx_bottom=($px4+$px3)/2;
+                $pavgy_bottom=($py4+$py3)/2;
+                $pavgx_top=($px1+$px2)/2;
+                $pavgy_top=($py1+$py2)/2;       
+                } else {
+                    array_push($new_blocks,new TextBlock($this->path, $px1,$py1,$px2,$py2,$px3,$py3,$px4,$py4));
+                    $px1 = $x1;
+                    $py1 = $y1;
+                    $px2 = $x2;
+                    $py2 = $y2;
+                    $px3 = $x3;
+                    $py3 = $y3;
+                    $px4 = $x4;
+                    $py4 = $y4;
+                    $pavgx_bottom=$avgx_bottom;
+                    $pavgy_bottom=$avgy_bottom;
+                    $pavgx_top=$avgx_top;
+                    $pavgy_top=$avgy_top;       
+                }
+            }
+        }
+        array_push($new_blocks,new TextBlock($this->path, $x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4));
+        $this->text_blocks=$new_blocks;
+  }
+
   //write translated text over cleaned image
-  function write_translation () {
+  function insert_translations () {
     $this->final_image = imagecreatefromjpeg($this->clean_path);
     foreach ($this->text_blocks as $block) {
         $black = imagecolorallocate($this->final_image, 0, 0, 0);
+
+        $translation_width=$block->translation_width;
+        $translation_height=$block->translation_height;
+
+        $block_center_x=($block->x1+$block->x2+$block->x3+$block->x4)/4;
+        $block_center_y=($block->y1+$block->y2+$block->y3+$block->y4)/4;
+
+        //Coordonates to place text centered
+        $insert_x=$block_center_x-($translation_width/2);
+        $insert_y=$block_center_y-($translation_height/2);
+        
 
           imagettftext (
               $this->final_image,
               $block->font_size,
               $block->text_angle,
-              ($block->x1+$block->x4)/2+11,
-              $block->y1 +24,
+              $insert_x,
+              $insert_y,
               $black,
               $block->font,
               $block->formatted_text );

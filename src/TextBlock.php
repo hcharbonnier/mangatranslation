@@ -27,10 +27,15 @@ class TextBlock {
     public $background_color;
     public $background_color_alt;
     public $ocr_text;
+    public $ocr_paragraph;
     public $translated_text;
     public $formatted_text;
-    public $font_size=20;
+    public $font_size;
     public $text_angle=0;
+    public $translation_width;
+    public $translation_height;
+    public $original_font_size;
+
     public $font=__DIR__."/../fonts/animeace2_reg.ttf";
 
     function __construct($mother_path,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4) {
@@ -42,19 +47,89 @@ class TextBlock {
         $this->y3 = $y3;
         $this->x4 = $x4;
         $this->y4 = $y4;
-        $this->text_angle = round($this->pixels_angle(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
         $this->mother_path = $mother_path;
-        $this->mother_image = imagecreatefromjpeg($mother_path);
-        $this->extract_bloc();
-        $this->dominant_color();
-        $this->dominant_color_alt();
-        $this->ocr_text = detect_text($this->path);
-        $this->translated_text=translate($this->ocr_text, "fr");
+    }
+
+        function load() {
+            $x1=$this->x1;
+            $y1=$this->y1;
+            $x2=$this->x2;
+            $y2=$this->y2;
+            $x3=$this->x3;
+            $y3=$this->y3;
+            $x4=$this->x4;
+            $y4=$this->y4;
+            $mother_path=$this->mother_path;
+            $this->text_angle = round($this->pixels_angle(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
+            $this->mother_image = imagecreatefromjpeg($mother_path);
+            $this->extract_bloc();
+            $this->dominant_color();
+            $this->dominant_color_alt();
+            $this->detect_text();
+            $this->find_font_size();
+            $this->font_size=$this->original_font_size;
+
+
+        $this->translated_text=translate($this->ocr_text, "en");
         $formatted_text=format_text(min($this->x2-$this->x1,$this->x3-$this->x4 ),min($this->y4-$this->y1, $this->y3-$this->y2), $this->text_angle, $this->font, $this->font_size, $this->translated_text,11);
-        //print_r($formatted_text);
+        $this->translation_width = $formatted_text['width_px'];
+        $this->translation_height = $formatted_text['height_px'];
         $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
         //echo($this->formatted_text);
         $this->font_size=$formatted_text['size'];
+    }
+
+    function detect_text()
+    {
+        $path=$this->path;
+        $resultats=array();
+        $j=0;
+        $imageAnnotator = new ImageAnnotatorClient();
+
+        # annotate the image
+        $image = file_get_contents($path);
+        $response = $imageAnnotator->textDetection($image);
+        $texts = $response->getTextAnnotations();
+        $i=0;
+        foreach ($texts as $text) {
+            if ($i == 0) {
+                $string=$text->getDescription();
+                foreach ($text->getBoundingPoly()->getVertices() as $vertex) {
+                $x=$vertex->getX();
+                break;
+                }
+                $resultats[$j][0]=$x;
+                $resultats[$j][1]=$string;
+            }
+            $j++;
+            $i++;
+        }
+        $imageAnnotator->close();
+        sort($resultats);
+        $res="";
+        for ($k=0 ; isset($resultats[$k]) ; $k++){
+            $res.=' '.$resultats[$k][1];
+        }
+        $order=array("\r\n", "\n", "\r");
+        $txt=trim(str_replace($order, ' ', $res));
+        $paragraph=trim(str_replace($order, "\n", $res));
+        $txt=str_replace('  ', ' ', $txt);
+        $this->ocr_paragraph=$paragraph;
+        $this->ocr_text=trim($txt);
+    }
+
+    function original_text_pixel_height(){
+        $a=(($this->y3+$this->y4)/2)-(($this->y1+$this->y2)/2);
+        $b=(($this->x3+$this->x4)/2)-(($this->x1+$this->x2)/2);
+        $c=sqrt(pow($a,2)+pow($b,2));
+        return $c;
+    }
+
+    function find_font_size(){
+        $nb_line=substr_count( $this->ocr_paragraph, "\n" )+1;
+        $height_pixel=$this->original_text_pixel_height();
+        $font_pixel_height=$height_pixel/$nb_line;
+        $this->original_font_size=round($font_pixel_height/2.2);
     }
 
     function dominant_color(){
@@ -145,6 +220,7 @@ class TextBlock {
         imagefilledpolygon($image, $pol4, 4, $white);
         $this->image=imagecropauto($image,IMG_CROP_WHITE);
         //$this->image=imagecrop($image, [ 'x' => $this->x, 'y' => $this->y,'width' => $this->width,'height' => $this->height]);
+        @mkdir("dump");
         $this->path='dump/'.basename($this->mother_path).'-'.$this->x1.'-'.$this->y1.'.jpg';
         imagejpeg($this->image,$this->path);
     }
