@@ -48,12 +48,13 @@ class MangaImage
     $this->draw_boxes2($this->path);
 
     $this->merge_similar_bloc();
-    $this->draw_boxes2($this->path,1,2);
+
 
     
     foreach ($this->text_blocks as $text_block) {
         $text_block->load();
     }
+    $this->draw_boxes2($this->path,1,2);
     $this->clean_image();
     $this->insert_translations();
     //$this->draw_boxes($this->path,$this->bounds);
@@ -182,7 +183,6 @@ class MangaImage
         imageline ( $image ,  $text_block->x2 +$offset, $text_block->y2 -$offset, $text_block->x3 +$offset , $text_block->y3+$offset , $linecolor);
         imageline ( $image ,  $text_block->x3 +$offset, $text_block->y3+$offset , $text_block->x4 -$offset, $text_block->y4+$offset , $linecolor);
         imageline ( $image ,  $text_block->x4 -$offset , $text_block->y4 +$offset, $text_block->x1 -$offset, $text_block->y1-$offset , $linecolor);
-         
     }
     $this->image_drawn=$image;
     @imagejpeg($this->image_drawn,"./dump/boxes$color.jpg");
@@ -231,77 +231,56 @@ class MangaImage
       }
   }
 
-  function merge_similar_bloc($tolerance=25){
-      $new_blocks=[];
-      foreach($this->text_blocks as $text_block){
-        //echo "#############################################################################################\n";
-        $x1=$text_block->x1;
-        $y1=$text_block->y1;
-        $x2=$text_block->x2;
-        $y2=$text_block->y2;
-        $x3=$text_block->x3;
-        $y3=$text_block->y3;
-        $x4=$text_block->x4;
-        $y4=$text_block->y4;
-        $avgx_bottom=($x4+$x3)/2;
-        $avgy_bottom=($y4+$y3)/2;
-        $avgx_top=($x1+$x2)/2;
-        $avgy_top=($y1+$y2)/2;
+  function merge_similar_bloc($tolerance=20){
+   //known bug: To bloc can expand over eachother
 
-        //echo "x1:$x1 y1:$y1 x2:$x2 y2:$y2 x3:$x3 y3:$y3 x4:$x4 y4:$y4  avgx_bottom:$avgx_bottom avgy_bottom:$avgy_bottom avgx_to:$avgx_top avgy_to:$avgy_top \n";
-        if (! isset($px1)) {
-            $px1 = $x1;
-            $py1 = $y1;
-            $px2 = $x2;
-            $py2 = $y2;
-            $px3 = $x3;
-            $py3 = $y3;
-            $px4 = $x4;
-            $py4 = $y4;
-            $pavgx_bottom=$avgx_bottom;
-            $pavgy_bottom=$avgy_bottom;
-            $pavgx_top=$avgx_top;
-            $pavgy_top=$avgy_top;
-        } else {
-            //echo "px1:$px1 py1:$py1 px2:$px2 py2:$py2 px3:$px3 py3:$py3 px4:$px4 py4:$py4  pavgx_bottom:$pavgx_bottom pavgy_bottom:$pavgy_bottom pavgx_top:$pavgx_top pavgy_top:$pavgy_top \n";
-            $block_distance_y=$avgy_top-$pavgy_bottom;
-            //echo "block_distance_y:$block_distance_y\n";
-            if ((($block_distance_y < $tolerance) && ($block_distance_y >0)) && ((($px4 -$tolerance < $x1) && ($px3+$tolerance > $x2)) || (($px4 +$tolerance> $x1) && ($px3 -$tolerance < $x2))))
-                {
-                //echo "same block\n";
-                // both x and y says it is the same block
-                $px1=(min($x1,$px1));
-                $py1=$py1;
-                $px2=(max($x2,$px2));
-                $py2=$py2;
-                $px3=(max($x3,$px3));
-                $py3=$y3;
-                $px4=(min($x4,$px4));
-                $py4=$y4;
-                $pavgx_bottom=($px4+$px3)/2;
-                $pavgy_bottom=($py4+$py3)/2;
-                $pavgx_top=($px1+$px2)/2;
-                $pavgy_top=($py1+$py2)/2;
-                } else {
-                    array_push($new_blocks,new TextBlock($this->path, $px1,$py1,$px2,$py2,$px3,$py3,$px4,$py4));
-                    $px1 = $x1;
-                    $py1 = $y1;
-                    $px2 = $x2;
-                    $py2 = $y2;
-                    $px3 = $x3;
-                    $py3 = $y3;
-                    $px4 = $x4;
-                    $py4 = $y4;
-                    $pavgx_bottom=$avgx_bottom;
-                    $pavgy_bottom=$avgy_bottom;
-                    $pavgx_top=$avgx_top;
-                    $pavgy_top=$avgy_top;       
+    for ($i=0;isset($this->text_blocks[$i]); $i++){
+        for ($j=$i+1; isset($this->text_blocks[$j]);$j++) {
+            $ix1=$this->text_blocks[$i]->x1;
+            $iy1=$this->text_blocks[$i]->y1;
+            $ix2=$this->text_blocks[$i]->x2;
+            $iy2=$this->text_blocks[$i]->y2;
+            $ix3=$this->text_blocks[$i]->x3;
+            $iy3=$this->text_blocks[$i]->y3;
+            $ix4=$this->text_blocks[$i]->x4;
+            $iy4=$this->text_blocks[$i]->y4;
+            $iavgx_bottom=($ix4+$ix3)/2;
+            $iavgy_bottom=($iy4+$iy3)/2;
+            $iavgx_top=($ix1+$ix2)/2;
+            $iavgy_top=($iy1+$iy2)/2;   
+            $jx1=$this->text_blocks[$j]->x1;
+            $jy1=$this->text_blocks[$j]->y1;
+            $jx2=$this->text_blocks[$j]->x2;
+            $jy2=$this->text_blocks[$j]->y2;
+            $jx3=$this->text_blocks[$j]->x3;
+            $jy3=$this->text_blocks[$j]->y3;
+            $jx4=$this->text_blocks[$j]->x4;
+            $jy4=$this->text_blocks[$j]->y4;
+            $javgx_bottom=($jx4+$jx3)/2;
+            $javgy_bottom=($jy4+$jy3)/2;
+            $javgx_top=($jx1+$jx2)/2;
+            $javgy_top=($jy1+$jy2)/2;             
+
+            $block_distance_y=$javgy_top-$iavgy_bottom;
+                if ((($block_distance_y < $tolerance) && ($block_distance_y >0)) && ((($ix4 -$tolerance < $jx1) && ($ix3+$tolerance > $jx2)) || (($ix4 +$tolerance> $jx1) && ($ix3 -$tolerance < $jx2))))
+                    {
+                    // both x and y says it is the same block
+                    $this->text_blocks[$i]->x1=(min($jx1,$ix1));
+                    $this->text_blocks[$i]->iy1=$iy1;
+                    $this->text_blocks[$i]->x2=(max($jx2,$ix2));
+                    $this->text_blocks[$i]->y2=$iy2;
+                    $this->text_blocks[$i]->x3=(max($jx3,$ix3));
+                    $this->text_blocks[$i]->y3=$jy3;
+                    $this->text_blocks[$i]->x4=(min($jx4,$ix4));
+                    $this->text_blocks[$i]->y4=$jy4;
+
+                    unset($this->text_blocks[$j]);
+                    $this->text_blocks = array_values($this->text_blocks);
+                    $j--;
+                    }
                 }
-            }
         }
-        array_push($new_blocks,new TextBlock($this->path, $x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4));
-        $this->text_blocks=$new_blocks;
-  }
+    }
 
   //write translated text over cleaned image
   function insert_translations () {

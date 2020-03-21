@@ -68,6 +68,7 @@ class TextBlock {
             $this->dominant_color();
             $this->dominant_color_alt();
             $this->detect_text();
+            $this->expand_block_text();
             $this->find_font_size();
             $this->font_size=$this->original_font_size;
 
@@ -227,5 +228,119 @@ class TextBlock {
         @mkdir("dump");
         $this->path='dump/'.basename($this->mother_path).'-'.$this->x1.'-'.$this->y1.'.jpg';
         imagejpeg($this->image,$this->path);
+    }
+
+    function expand_block_text($threshold=30){
+        $mother_path=$this->mother_path;
+        $background=$this->background_color_alt;
+        $x1=$this->x1;
+        $y1=$this->y1;
+        $x2=$this->x2;
+        $y2=$this->y2;
+        $x3=$this->x3;
+        $y3=$this->y3;
+        $x4=$this->x4;
+        $y4=$this->y4;
+        $image=$this->mother_image;
+        if (abs($x1-$x4) <4) {
+            $doleft=true;
+            $x1 =min($x1,$x4);
+            $x4=$x1;
+        }
+        if (abs($y1-$y2) <4) {
+            $dotop=true;
+            $y1 =min($y1,$y2);
+            $y2 =$y1;
+        }
+        if (abs($x2-$x3) <4) {
+            $doright=true;
+            $x2 =max($x2,$x3);
+            $x3 =$x2;
+        }
+        if (abs($y3-$y4) <4) {
+            $dobottom=true;
+            $y3 =max($y3,$y4);
+            $y4 =$y3;
+        }
+
+        while ($doleft || $dotop || $doright || $dobottom) {
+            //doleft
+                $x=$x1-1;
+                for ($y=$y4; ($y >= $y1) && $doleft; $y-- ){
+                    $rgb=imagecolorat($image,$x,$y);
+                    $colors=imagecolorsforindex($image,$rgb);
+                    if ( 
+                        (abs($colors['red'] - $background[0]) >$threshold) ||
+                        (abs($colors['green'] - $background[1]) >$threshold) ||
+                        (abs($colors['blue'] - $background[2]) >$threshold))
+                        {
+                             $doleft =false;
+                        }
+                }
+                if ($doleft ){
+                    $x1=$x;
+                    $x4=$x;
+                    $this->x1=$x;
+                    $this->x4=$x;
+                }
+            //dotop
+                $y=$y1-1;
+                for ($x=$x1; ($x <= $x2) && $dotop; $x++ ){
+                    $rgb=imagecolorat($image,$x,$y);
+                    $colors=imagecolorsforindex($image,$rgb);
+                    if ( 
+                        (abs($colors['red'] - $background[0]) >$threshold) ||
+                        (abs($colors['green'] - $background[1]) >$threshold) ||
+                        (abs($colors['blue'] - $background[2]) >$threshold))
+                        {
+                             $dotop =false;
+                        }
+                }
+                if ($dotop ){
+                    $y1=$y;
+                    $y2=$y;
+                    $this->y1=$y;
+                    $this->y2=$y;
+                }
+                //doright
+                    $x=$x2+1;
+                    for ($y=$y2; ($y <= $y3) && $doright; $y++ ){
+                        $rgb=imagecolorat($image,$x,$y);
+                        $colors=imagecolorsforindex($image,$rgb);
+                        if ( 
+                            (abs($colors['red'] - $background[0]) >$threshold) ||
+                            (abs($colors['green'] - $background[1]) >$threshold) ||
+                            (abs($colors['blue'] - $background[2]) >$threshold))
+                            {
+                                 $doright =false;
+                            }
+                    }
+                    if ($doright ){
+                        $x2=$x;
+                        $x3=$x;
+                        $this->x2=$x;
+                        $this->x3=$x;
+                    }
+                    
+                //dobottom
+                $y=$y3+1;
+                for ($x=$x3; ($x >= $x4) && $dobottom; $x-- ){
+                    $rgb=imagecolorat($image,$x,$y);
+                    $colors=imagecolorsforindex($image,$rgb);
+                    if ( 
+                        (abs($colors['red'] - $background[0]) >$threshold) ||
+                        (abs($colors['green'] - $background[1]) >$threshold) ||
+                        (abs($colors['blue'] - $background[2]) >$threshold))
+                        {
+                             $dobottom =false;
+                        }
+                }
+                if ($dobottom ){
+                    $y3=$y;
+                    $y4=$y;
+                    $this->y3=$y;
+                    $this->y4=$y;
+                }
+        }
     }
 }

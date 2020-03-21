@@ -83,7 +83,6 @@ function format_text($width, $height, $angle, $font, $font_size, $text,$border=0
       return $resultat;
     }
 
-    echo "text:$text\n";
     $width=max($width-(2*$border), 2*$border+8);
     $height=max($height-(2*$border), 2*$border+8);
     $dim["height"]=$height;
