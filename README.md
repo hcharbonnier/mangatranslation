@@ -1,6 +1,8 @@
 # mangatranslation
 PHP manga automatic translator (Works with Google Cloud Platform)
 
+CPU Only, no cuda, no opencv, no machine learning
+
 ## Warning
 I am not a developper, so this project code might be really ugly. :)
 
@@ -21,6 +23,12 @@ then install depedencies:
 ```sh
 composer install
 ```
+## Requirement
+* php-7.4 (not tested with php<7.4 but could work)
+* php-gd
+* bcmath
+* A google cloud platform project configured
+ (https://cloud.google.com/dataproc/docs/guides/setup-project)
 ## Example
 ```php
 <?php
