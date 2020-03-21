@@ -14,7 +14,8 @@ create a composer.json file in your project, and add:
     "require": {
          "hcharbonnier/mangatranslation": ">=0.0.1"
     }
-}```
+}
+```
 
 then install depedencies:
 ```sh
@@ -31,7 +32,7 @@ use mangatranslation\TextBlock;
 $test = new MangaImage($argv[1]);
 $test->load();
 ```
-## Usage
+Then run:
 ```sh
 $ export GOOGLE_APPLICATION_CREDENTIALS=PATH_TO_GOOGLE_PROJECT.json
 $ php example.php image.jpeg
