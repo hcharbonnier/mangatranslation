@@ -8,7 +8,7 @@
             "email": "hugues.charbonnier@gmail.com"
         }
     ],    "license": "GPL-3.0-or-later",
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "require": {
          "google/cloud-vision": "^0.24.0",
          "ksubileau/color-thief-php":"^1.4.1",
