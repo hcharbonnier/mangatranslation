@@ -304,6 +304,9 @@ class MangaImage
         //echo "translation_width:$translation_width translation_height:$translation_height block->translation_top_offset:".$block->translation_top_offset."\n";
 
         //$insert_y=$block_center_y+($translation_height/2);
+        //echo "______________________\n";
+        //echo "x1:". $block->x1." y1:".$block->y1."\n";
+        //echo "text:".  $block->formatted_text."\n";
 
         imagettftext (
           $this->final_image,

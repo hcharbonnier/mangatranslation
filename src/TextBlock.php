@@ -62,6 +62,7 @@ class TextBlock {
             $x4=$this->x4;
             $y4=$this->y4;
             $mother_path=$this->mother_path;
+            $this->reorder_points();
             $this->text_angle = round($this->pixels_angle2(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
            // echo "angle:".$this->text_angle."\n";
             //echo "x1:".(($x1+$x4)/2)." y1:". (($y1+$y4)/2)." x2:".(($x2+$x3)/2)." y2:".(($y2+$y3)/2)."\n;";
@@ -74,16 +75,16 @@ class TextBlock {
             $this->find_font_size();
             $this->font_size=$this->original_font_size;
 
-        $this->translated_text=translate($this->ocr_text, "en");
+            $this->translated_text=translate($this->ocr_text, "en");
 
-        $formatted_text=format_text(min($this->x2-$this->x1,$this->x3-$this->x4 ),min($this->y4-$this->y1, $this->y3-$this->y2), $this->text_angle, $this->font, $this->font_size, $this->translated_text,11);
-        $this->translation_width = $formatted_text['width_px'];
-        $this->translation_height = $formatted_text['height_px'];
-        $this->translation_top_offset= $formatted_text['top'];
-        $this->translation_left_offset = $formatted_text['left'];
-        $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
-        //echo($this->formatted_text);
-        $this->font_size=$formatted_text['size'];
+            $formatted_text=format_text(min($this->x2-$this->x1,$this->x3-$this->x4 ),min($this->y4-$this->y1, $this->y3-$this->y2), $this->text_angle, $this->font, $this->font_size, $this->translated_text,11);
+            $this->translation_width = $formatted_text['width_px'];
+            $this->translation_height = $formatted_text['height_px'];
+            $this->translation_top_offset= $formatted_text['top'];
+            $this->translation_left_offset = $formatted_text['left'];
+             $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
+            //echo($this->formatted_text);
+            $this->font_size=$formatted_text['size'];
     }
 
     function detect_text()
@@ -193,6 +194,24 @@ class TextBlock {
         return(array($r,$g,$b));
     }
 
+    private function reorder_points (){
+        //If text is not horizontal, we need x2,y2 to be the higher point (needed by extract_bloc())
+        while (( min($this->y1,$this->y3,$this->y4,) < $this->y2 -2) && ( max($this->y1,$this->y2,$this->y3,) > $this->y4 +2)){
+            //echo "rotate\n";
+            $tmpx=$this->x1;
+            $tmpy=$this->y1;
+            $this->x1=$this->x2;
+            $this->y1=$this->y2;
+            $this->x2=$this->x3;
+            $this->y2=$this->y3;
+            $this->x3=$this->x4;
+            $this->y3=$this->y4;
+            $this->x4=$tmpx;
+            $this->y4=$tmpy;
+        }
+
+    }
+
     //Extract bloc textimage from manga image
     function extract_bloc() {
         //image crop don't work with text with angles
@@ -233,14 +252,24 @@ class TextBlock {
             0,$image_height
         );
 
-        imagefilledpolygon($image, $pol1, 4, $white);
-        imagefilledpolygon($image, $pol2, 4, $white);
-        imagefilledpolygon($image, $pol3, 4, $white);
-        imagefilledpolygon($image, $pol4, 4, $white);
-        $this->image=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0, $white);
-//        @mkdir("dump");
-//        $this->path='dump/'.basename($this->mother_path).'-'.$this->x1.'-'.$this->y1.'.jpg';
-//        imagejpeg($this->image,$this->path);
+//        echo "x1:". $this->x1. " ";
+//        echo "y1:". $this->y1. " ";
+//        echo "x2:". $this->x2. " ";
+//        echo "y2:". $this->y2. " ";
+//        echo "x3:". $this->x3. " ";
+//        echo "y3:". $this->y3. " ";
+//        echo "x4:". $this->x4. " ";
+//        echo "y4:". $this->y4. "\n";
+        
+
+        imagefilledpolygon($image, $pol1, 5, $white);
+        imagefilledpolygon($image, $pol2, 5, $white);
+        imagefilledpolygon($image, $pol3, 5, $white);
+        imagefilledpolygon($image, $pol4, 5, $white);
+        $this->image=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0.1, $white);
+        @mkdir("dump");
+        $this->path='dump/'.basename($this->mother_path).'-'.$this->x1.'-'.$this->y1.'.jpg';
+        imagejpeg($this->image,$this->path);
     }
 
     function expand_block_text($tolerance=50,$offset=5){

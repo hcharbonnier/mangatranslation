@@ -13,7 +13,7 @@ function translate ($text,$targetLanguage){
   return($result["text"]);
 }
 function calculateTextBoxtmp($font_size, $font_angle, $font_file, $text) {
-  $im = imagecreatetruecolor(800, 800);
+  $im = imagecreatetruecolor(8000, 8000);
   $white = imagecolorallocate($im, 255, 255, 255);
   $black = imagecolorallocate($im, 0, 0, 0);
   imagefilledrectangle($im, 0, 0, 799, 799, $white);
