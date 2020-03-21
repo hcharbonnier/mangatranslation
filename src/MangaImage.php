@@ -54,7 +54,7 @@ class MangaImage
     foreach ($this->text_blocks as $text_block) {
         $text_block->load();
     }
-    $this->draw_boxes2($this->path,1,2);
+    $this->draw_boxes2($this->path,1,1);
     $this->clean_image();
     $this->insert_translations();
     //$this->draw_boxes($this->path,$this->bounds);
@@ -185,7 +185,7 @@ class MangaImage
         imageline ( $image ,  $text_block->x4 -$offset , $text_block->y4 +$offset, $text_block->x1 -$offset, $text_block->y1-$offset , $linecolor);
     }
     $this->image_drawn=$image;
-    @imagejpeg($this->image_drawn,"./dump/boxes$color.jpg");
+    @imagejpeg($this->image_drawn,'dump/boxes'.basename($fileName).'-'.$offset.'-'.'.jpg');
   }
   
 
@@ -232,7 +232,6 @@ class MangaImage
   }
 
   function merge_similar_bloc($tolerance=20){
-   //known bug: To bloc can expand over eachother
 
     for ($i=0;isset($this->text_blocks[$i]); $i++){
         for ($j=$i+1; isset($this->text_blocks[$j]);$j++) {

@@ -223,24 +223,25 @@ class TextBlock {
         imagefilledpolygon($image, $pol2, 4, $white);
         imagefilledpolygon($image, $pol3, 4, $white);
         imagefilledpolygon($image, $pol4, 4, $white);
-        $this->image=imagecropauto($image,IMG_CROP_WHITE);
+        $this->image=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0, $white);
         //$this->image=imagecrop($image, [ 'x' => $this->x, 'y' => $this->y,'width' => $this->width,'height' => $this->height]);
         @mkdir("dump");
         $this->path='dump/'.basename($this->mother_path).'-'.$this->x1.'-'.$this->y1.'.jpg';
         imagejpeg($this->image,$this->path);
     }
 
-    function expand_block_text($threshold=30){
+    function expand_block_text($tolerance=50,$offset=5){
+        //known bug: To bloc can expand over eachother
         $mother_path=$this->mother_path;
         $background=$this->background_color_alt;
-        $x1=$this->x1;
-        $y1=$this->y1;
-        $x2=$this->x2;
-        $y2=$this->y2;
-        $x3=$this->x3;
-        $y3=$this->y3;
-        $x4=$this->x4;
-        $y4=$this->y4;
+        $x1=$this->x1 - $offset;
+        $y1=$this->y1 - $offset;
+        $x2=$this->x2 + $offset;
+        $y2=$this->y2 - $offset;
+        $x3=$this->x3 + $offset;
+        $y3=$this->y3 + $offset;
+        $x4=$this->x4 - $offset;
+        $y4=$this->y4 + $offset;
         $image=$this->mother_image;
         if (abs($x1-$x4) <4) {
             $doleft=true;
@@ -263,16 +264,17 @@ class TextBlock {
             $y4 =$y3;
         }
 
-        while ($doleft || $dotop || $doright || $dobottom) {
+        //We expand each block side 1px per 1 px, so  we keep the original textbolck center
+        while ($doleft && $dotop && $doright && $dobottom) {
             //doleft
                 $x=$x1-1;
                 for ($y=$y4; ($y >= $y1) && $doleft; $y-- ){
                     $rgb=imagecolorat($image,$x,$y);
                     $colors=imagecolorsforindex($image,$rgb);
                     if ( 
-                        (abs($colors['red'] - $background[0]) >$threshold) ||
-                        (abs($colors['green'] - $background[1]) >$threshold) ||
-                        (abs($colors['blue'] - $background[2]) >$threshold))
+                        (abs($colors['red'] - $background[0]) >$tolerance) ||
+                        (abs($colors['green'] - $background[1]) >$tolerance) ||
+                        (abs($colors['blue'] - $background[2]) >$tolerance))
                         {
                              $doleft =false;
                         }
@@ -289,9 +291,9 @@ class TextBlock {
                     $rgb=imagecolorat($image,$x,$y);
                     $colors=imagecolorsforindex($image,$rgb);
                     if ( 
-                        (abs($colors['red'] - $background[0]) >$threshold) ||
-                        (abs($colors['green'] - $background[1]) >$threshold) ||
-                        (abs($colors['blue'] - $background[2]) >$threshold))
+                        (abs($colors['red'] - $background[0]) >$tolerance) ||
+                        (abs($colors['green'] - $background[1]) >$tolerance) ||
+                        (abs($colors['blue'] - $background[2]) >$tolerance))
                         {
                              $dotop =false;
                         }
@@ -308,9 +310,9 @@ class TextBlock {
                         $rgb=imagecolorat($image,$x,$y);
                         $colors=imagecolorsforindex($image,$rgb);
                         if ( 
-                            (abs($colors['red'] - $background[0]) >$threshold) ||
-                            (abs($colors['green'] - $background[1]) >$threshold) ||
-                            (abs($colors['blue'] - $background[2]) >$threshold))
+                            (abs($colors['red'] - $background[0]) >$tolerance) ||
+                            (abs($colors['green'] - $background[1]) >$tolerance) ||
+                            (abs($colors['blue'] - $background[2]) >$tolerance))
                             {
                                  $doright =false;
                             }
@@ -328,9 +330,9 @@ class TextBlock {
                     $rgb=imagecolorat($image,$x,$y);
                     $colors=imagecolorsforindex($image,$rgb);
                     if ( 
-                        (abs($colors['red'] - $background[0]) >$threshold) ||
-                        (abs($colors['green'] - $background[1]) >$threshold) ||
-                        (abs($colors['blue'] - $background[2]) >$threshold))
+                        (abs($colors['red'] - $background[0]) >$tolerance) ||
+                        (abs($colors['green'] - $background[1]) >$tolerance) ||
+                        (abs($colors['blue'] - $background[2]) >$tolerance))
                         {
                              $dobottom =false;
                         }
