@@ -285,6 +285,7 @@ class MangaImage
     foreach ($this->text_blocks as $block) {
         $black = imagecolorallocate($this->final_image, 0, 0, 0);
         $red = imagecolorallocate($this->final_image, 255, 0, 0);
+        $yellow = imagecolorallocate($this->final_image, 255, 255, 0);
 
         $translation_width=$block->translation_width;
         $translation_height=$block->translation_height;
@@ -292,21 +293,8 @@ class MangaImage
         $block_center_x=($block->x1+$block->x2+$block->x3+$block->x4)/4;
         $block_center_y=($block->y1+$block->y2+$block->y3+$block->y4)/4;
 
-        
-        //imageline (  $this->final_image ,  $block_center_x -60 , $block_center_y , $block_center_x+60 , $block_center_y ,  $red );
-        //imageline (  $this->final_image ,  $block_center_x , $block_center_y -60, $block_center_x , $block_center_y +60,  $red );
-
-        //Coordonates to place text centered
         $insert_x=$block_center_x-($translation_width/2);
         $insert_y=$block_center_y-($translation_height/2)+$block->translation_top_offset;
-        //imageline (  $this->final_image ,  $insert_x -60 , $insert_y , $insert_x+60 , $insert_y ,  $black );
-        //imageline (  $this->final_image ,  $insert_x , $insert_y -60, $insert_x , $insert_y +60,  $black );
-        //echo "translation_width:$translation_width translation_height:$translation_height block->translation_top_offset:".$block->translation_top_offset."\n";
-
-        //$insert_y=$block_center_y+($translation_height/2);
-        //echo "______________________\n";
-        //echo "x1:". $block->x1." y1:".$block->y1."\n";
-        //echo "text:".  $block->formatted_text."\n";
 
         imagettftext (
           $this->final_image,

@@ -16,7 +16,7 @@ function calculateTextBoxtmp($font_size, $font_angle, $font_file, $text) {
   $im = imagecreatetruecolor(8000, 8000);
   $white = imagecolorallocate($im, 255, 255, 255);
   $black = imagecolorallocate($im, 0, 0, 0);
-  imagefilledrectangle($im, 0, 0, 799, 799, $white);
+  imagefilledrectangle($im, 0, 0, 7999, 7999, $white);
   imagettftext($im, $font_size, $font_angle, 30, 770, $black, $font_file, $text);
   $im=imagecropauto($im,IMG_CROP_WHITE);
   $width=imagesx($im);
@@ -67,81 +67,4 @@ function calculateTextBox($font_size, $font_angle, $font_file, $text) {
                 "top"    => $top  - $rtop,
                 "width"  => $rright - $rleft + 1,
                 "height" => $rbottom - $rtop + 1 );
-}
-
-// Find parameters to fit text in image
-function format_text($width, $height, $angle, $font, $font_size, $text,$border=0) 
-{
-    if (trim($text) == "" ) {
-      $resultat['font']=$font;
-      $resultat['text']=$text;
-      $resultat['size']=$font_size;
-      $resultat['width_px']=0;
-      $resultat['height_px']=0;
-      $resultat['top']=0;
-      $resultat['left']=0;
-      return $resultat;
-    }
-
-    $width=max($width-(2*$border), 2*$border+8);
-    $height=max($height-(2*$border), 2*$border+8);
-    $dim["height"]=$height;
-
-    if ($font_size <=5)
-      $font_size=6;
-      
-    while ((( $dim["height"]  >= $height )||( $dim["width"]  >= $width )) && ($font_size > 5)) {
-        $image_heigth=$height;
-        $image_width=$width;
-        $size=$font_size;
-        $angle=$angle;
-        $x=$border;
-        $y=$border;
-
-        $res=[];
-        $res[0]="";
-        $max_line_length=($image_width);
-        $line_length=0;
-
-        $arr=explode(' ', $text);
-        $j=0;
-        //for each word
-        for ($i=0; isset($arr[$i]);$i++){
-            //we calculate word dimensions
-            $arr_stat=calculateTextBox($size, $angle, $font, $arr[$i].'#');
-
-            //if  word +current ligne length larger than line, we change line
-            if ($line_length +$arr_stat['width'] > $max_line_length){
-                $res[$j]=trim($res[$j]);
-                $j++;
-                $res[$j]="";
-                $line_length=0;
-            }
-
-            $res[$j]=$res[$j].$arr[$i].' ';
-            $line_length=$line_length+$arr_stat['width'];
-        }
-
-        $text_res=implode("\n", $res);
-        $dim=(calculateTextBox($size, $angle, $font, $text_res));
-
-        $image = imagecreatetruecolor($width, $height);
-        $white = imagecolorallocate($image, 255, 255, 255);
-        $grey = imagecolorallocate($image, 128, 128, 128);
-        $black = imagecolorallocate($image, 0, 0, 0);
-        $color=$black;
-        imagefilledrectangle($image, 0, 0, $height-1, $width-1, $white);
-        imagettftext (  $image , $size , $angle , $x ,  $y ,  $black , $font ,  $text_res );
-
-        imagejpeg($image,"test.jpg");
-        $resultat['font']=$font;
-        $resultat['text']=$text_res;
-        $resultat['size']=$size;
-        $resultat['top']=$dim['top'];
-        $resultat['left']=$dim['left'];
-        $resultat['width_px']=$dim['width'];
-        $resultat['height_px']=$dim['height'];
-        $font_size--;
-    }
-  return $resultat;
 }
