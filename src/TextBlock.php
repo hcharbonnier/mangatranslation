@@ -203,28 +203,34 @@ class TextBlock {
         list($image_width, $image_height, $type, $attr) = getimagesize($this->mother_path);        
         $pol1=array(
             0,0,
-            $this->x1,$this->y1,
+            $this->x2,0,
             $this->x2,$this->y2,
-            $image_width,0
+            $this->x1,$this->y1,
+            0,$this->y1
         );
+
         $pol2=array(
-            $image_width,0,
+            $this->x2,0,
             $this->x2,$this->y2,
             $this->x3,$this->y3,
-            $image_width, $image_height
+            $image_width, $this->y3,
+            $image_width, 0
         );
         $pol3=array(
             
-            $image_width, $image_height,
+            $image_width,$this->y3,
             $this->x3,$this->y3,
             $this->x4,$this->y4,
-            0,$image_height
+            $this->x4,$image_height,
+            $image_width,$image_height
+
         );
         $pol4=array(
-            0,$image_height,
+            $this->x4,$image_height,
             $this->x4,$this->y4,
             $this->x1,$this->y1,
-            0,0
+            0,$this->y1,
+            0,$image_height
         );
 
         imagefilledpolygon($image, $pol1, 4, $white);
