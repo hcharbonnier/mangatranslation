@@ -24,7 +24,7 @@ class TextBlock {
     public $y3;
     public $x4;
     public $y4;
-    public $background_color;
+//    public $background_color;
     public $background_color_alt;
     public $ocr_text;
     public $ocr_paragraph;
@@ -62,18 +62,20 @@ class TextBlock {
             $x4=$this->x4;
             $y4=$this->y4;
             $mother_path=$this->mother_path;
-            $this->text_angle = round($this->pixels_angle(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
+            $this->text_angle = round($this->pixels_angle2(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
+           // echo "angle:".$this->text_angle."\n";
+            //echo "x1:".(($x1+$x4)/2)." y1:". (($y1+$y4)/2)." x2:".(($x2+$x3)/2)." y2:".(($y2+$y3)/2)."\n;";
             $this->mother_image = imagecreatefromjpeg($mother_path);
             $this->extract_bloc();
-            $this->dominant_color();
+            //$this->dominant_color();
             $this->dominant_color_alt();
             $this->detect_text();
             $this->expand_block_text();
             $this->find_font_size();
             $this->font_size=$this->original_font_size;
 
-
         $this->translated_text=translate($this->ocr_text, "en");
+
         $formatted_text=format_text(min($this->x2-$this->x1,$this->x3-$this->x4 ),min($this->y4-$this->y1, $this->y3-$this->y2), $this->text_angle, $this->font, $this->font_size, $this->translated_text,11);
         $this->translation_width = $formatted_text['width_px'];
         $this->translation_height = $formatted_text['height_px'];
@@ -86,13 +88,18 @@ class TextBlock {
 
     function detect_text()
     {
-        $path=$this->path;
+        ob_start(); // start a new output buffer
+            imagejpeg($this->image,NULL,100);
+            $image = ob_get_contents();
+        ob_end_clean(); // stop this output buffer
+//        $path=$this->path;
         $resultats=array();
         $j=0;
         $imageAnnotator = new ImageAnnotatorClient();
 
         # annotate the image
-        $image = file_get_contents($path);
+        //$image = file_get_contents($path);
+        //$image=imagejpeg($this->image);
         $response = $imageAnnotator->textDetection($image);
         $texts = $response->getTextAnnotations();
         $i=0;
@@ -137,13 +144,13 @@ class TextBlock {
         $this->original_font_size=round($font_pixel_height/2.2);
     }
 
-    function dominant_color(){
+   /* function dominant_color(){
         $dominantColors = ColorThief::getPalette($this->path,$colorCount=2);
         if ($dominantColors[0][0]+$dominantColors[0][1]+$dominantColors[0][2] > $dominantColors[1][0]+$dominantColors[1][1]+$dominantColors[1][2])
             $this->background_color=$dominantColors[0];
         else
             $this->background_color=$dominantColors[1];
-    }
+    }*/
 
     function dominant_color_alt(){
         $pix1=array(($this->x1 + $this->x2)/2, ($this->y1 + $this->y2)/2-1);
@@ -165,16 +172,14 @@ class TextBlock {
     }
 
     // calculate  angle between 2 pixels
-    private function pixels_angle ($x1,$y1,$x2,$y2) {
+    private function pixels_angle2 ($x1,$y1,$x2,$y2) {
         $x3=$x2;
         $y3=$y1;
-        $ac_x=abs($x3-$x1);
-        $ac_y=abs($y3-$y1);
-        $ac_length=sqrt(pow($ac_x,2)+pow($ac_y,2));
-        $bc_x=abs($x2-$x3);
-        $bc_y=abs($y1-$y3);
-        $bc_length=sqrt(pow($bc_x,2)+pow($bc_y,2));
-        $bac=atan($bc_length/$ac_length);
+        $ac=abs($x3-$x1);
+        $bc=abs($y3-$y2);
+        $ab=sqrt(pow($bc,2)+pow($ac,2));
+        $tmp=((pow($ac,2) + pow($ab,2) - pow($bc,2)) / (2*$ac*$ab));
+        $bac = rad2deg(acos($tmp));
         return $bac;
     }
 
@@ -190,6 +195,9 @@ class TextBlock {
 
     //Extract bloc textimage from manga image
     function extract_bloc() {
+        //image crop don't work with text with angles
+        // so we fill everythin wich is not text in white,
+        // and then use autocrop
         $image = imagecreatefromjpeg($this->mother_path);
         $white   = imagecolorallocate($image, 255, 255, 255);
         list($image_width, $image_height, $type, $attr) = getimagesize($this->mother_path);        
@@ -224,10 +232,9 @@ class TextBlock {
         imagefilledpolygon($image, $pol3, 4, $white);
         imagefilledpolygon($image, $pol4, 4, $white);
         $this->image=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0, $white);
-        //$this->image=imagecrop($image, [ 'x' => $this->x, 'y' => $this->y,'width' => $this->width,'height' => $this->height]);
-        @mkdir("dump");
-        $this->path='dump/'.basename($this->mother_path).'-'.$this->x1.'-'.$this->y1.'.jpg';
-        imagejpeg($this->image,$this->path);
+//        @mkdir("dump");
+//        $this->path='dump/'.basename($this->mother_path).'-'.$this->x1.'-'.$this->y1.'.jpg';
+//        imagejpeg($this->image,$this->path);
     }
 
     function expand_block_text($tolerance=50,$offset=5){
@@ -247,22 +254,23 @@ class TextBlock {
             $doleft=true;
             $x1 =min($x1,$x4);
             $x4=$x1;
-        }
+        }else {$doleft=false;}
+
         if (abs($y1-$y2) <4) {
             $dotop=true;
             $y1 =min($y1,$y2);
             $y2 =$y1;
-        }
+        }else {$dotop=false;}
         if (abs($x2-$x3) <4) {
             $doright=true;
             $x2 =max($x2,$x3);
             $x3 =$x2;
-        }
+        }else {$doright=false;}
         if (abs($y3-$y4) <4) {
             $dobottom=true;
             $y3 =max($y3,$y4);
             $y4 =$y3;
-        }
+        }else {$dobottom=false;}
 
         //We expand each block side 1px per 1 px, so  we keep the original textbolck center
         while ($doleft && $dotop && $doright && $dobottom) {

@@ -86,23 +86,17 @@ function format_text($width, $height, $angle, $font, $font_size, $text,$border=0
     $width=max($width-(2*$border), 2*$border+8);
     $height=max($height-(2*$border), 2*$border+8);
     $dim["height"]=$height;
+
     if ($font_size <=5)
       $font_size=6;
-    while (( $dim["height"]  >= $height ) && ($font_size > 5)) {
-        $image = imagecreatetruecolor($width, $height);
-        $ori=$image;
-        $white = imagecolorallocate($image, 255, 255, 255);
-        $grey = imagecolorallocate($image, 128, 128, 128);
-        $black = imagecolorallocate($image, 0, 0, 0);
-        imagefilledrectangle($image, 0, 0, $height-1, $width-1, $white);
-
+      
+    while ((( $dim["height"]  >= $height )||( $dim["width"]  >= $width )) && ($font_size > 5)) {
         $image_heigth=$height;
         $image_width=$width;
         $size=$font_size;
         $angle=$angle;
         $x=$border;
         $y=$border;
-        $color=$black;
 
         $res=[];
         $res[0]="";
@@ -111,8 +105,12 @@ function format_text($width, $height, $angle, $font, $font_size, $text,$border=0
 
         $arr=explode(' ', $text);
         $j=0;
+        //for each word
         for ($i=0; isset($arr[$i]);$i++){
+            //we calculate word dimensions
             $arr_stat=calculateTextBox($size, $angle, $font, $arr[$i].'#');
+
+            //if  word +current ligne length larger than line, we change line
             if ($line_length +$arr_stat['width'] > $max_line_length){
                 $res[$j]=trim($res[$j]);
                 $j++;
@@ -123,9 +121,18 @@ function format_text($width, $height, $angle, $font, $font_size, $text,$border=0
             $res[$j]=$res[$j].$arr[$i].' ';
             $line_length=$line_length+$arr_stat['width'];
         }
+
         $text_res=implode("\n", $res);
         $dim=(calculateTextBox($size, $angle, $font, $text_res));
+
+        $image = imagecreatetruecolor($width, $height);
+        $white = imagecolorallocate($image, 255, 255, 255);
+        $grey = imagecolorallocate($image, 128, 128, 128);
+        $black = imagecolorallocate($image, 0, 0, 0);
+        $color=$black;
+        imagefilledrectangle($image, 0, 0, $height-1, $width-1, $white);
         imagettftext (  $image , $size , $angle , $x ,  $y ,  $black , $font ,  $text_res );
+
         imagejpeg($image,"test.jpg");
         $resultat['font']=$font;
         $resultat['text']=$text_res;

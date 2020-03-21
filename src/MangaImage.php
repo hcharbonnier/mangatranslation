@@ -46,14 +46,12 @@ class MangaImage
     $this->annotation = $this->response->getFullTextAnnotation();
     $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
     $this->draw_boxes2($this->path);
-
     $this->merge_similar_bloc();
-
-
-    
+   
     foreach ($this->text_blocks as $text_block) {
         $text_block->load();
     }
+
     $this->draw_boxes2($this->path,1,1);
     $this->clean_image();
     $this->insert_translations();
@@ -282,7 +280,7 @@ class MangaImage
     }
 
   //write translated text over cleaned image
-  function insert_translations () {
+  function insert_translations() {
     $this->final_image = imagecreatefromjpeg($this->clean_path);
     foreach ($this->text_blocks as $block) {
         $black = imagecolorallocate($this->final_image, 0, 0, 0);
@@ -308,15 +306,15 @@ class MangaImage
         //$insert_y=$block_center_y+($translation_height/2);
 
         imagettftext (
-              $this->final_image,
-              $block->font_size,
-              $block->text_angle,
-              $insert_x,
-              $insert_y,
-              $black,
-              $block->font,
-              $block->formatted_text );
-        @mkdir("translated");
+          $this->final_image,
+          $block->font_size,
+          $block->text_angle,
+          $insert_x,
+          $insert_y,
+          $black,
+          $block->font,
+          $block->formatted_text );
+    @mkdir("translated");
         $this->translated_path="translated/".basename($this->path);          
         imagejpeg($this->final_image,$this->translated_path); 
     }
