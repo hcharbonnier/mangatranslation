@@ -31,7 +31,7 @@ class MangaImage
  
   public $response=null;
   public $annotation=null;
-
+  public $denoiser=array("enable" => false);
   
   function __construct($path) {
     $this->path = $path;
@@ -57,6 +57,14 @@ class MangaImage
     $this->insert_translations();
     //$this->draw_boxes($this->path,$this->bounds);
     //$this->extract_bounds($this->path,$this->bounds);
+  }
+
+  //Only for Before OCR, not on final image
+  public function external_denoiser( $denoiser_cmd, $outputfilepattern="_DENOISEROUTPUTFILE_" ,$inputfilepattern="_DENOISERINPUTFILE_") {
+    $this->denoiser['enable']= true;
+    $this->denoiser['command']=$denoiser_cmd;
+    $this->denoiser['inputfilepattern']=$inputfilepattern;
+    $this->denoiser['outputfilepattern']=$outputfilepattern;
   }
 
   //debug function
@@ -117,27 +125,27 @@ class MangaImage
     foreach ($annotation->getPages() as $page) {
         if ($feature == FEATURE_PAGE){
             $coord=$this->bound_to_coord($page->getBoundingBox());
-            array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
+            array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
         }
         foreach ($page->getBlocks() as $block) {
             if ($feature == FEATURE_BLOCK) {
                 $coord=$this->bound_to_coord($block->getBoundingBox());
-                array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
+                array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
             }
             foreach ($block->getParagraphs() as $paragraph) {
                 if ($feature == FEATURE_PARA){
                     $coord=$this->bound_to_coord($paragraph->getBoundingBox());
-                    array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
+                    array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
                 }
                 foreach ($paragraph->getWords() as $word) {
                     if ($feature == FEATURE_WORD){
                         $coord=$this->bound_to_coord($word->getBoundingBox());
-                        array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
+                        array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
                     }
                     foreach ($word->getSymbols() as $symbol) {
                         if ($feature == FEATURE_SYMBOL){
                             $coord=$this->bound_to_coord($symbol->getBoundingBox());
-                            array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
+                            array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
                         }
                     }
                 }

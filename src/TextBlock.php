@@ -24,6 +24,7 @@ class TextBlock {
     public $y3;
     public $x4;
     public $y4;
+    public $denoiser=array();
 //    public $background_color;
     public $background_color_alt;
     public $ocr_text;
@@ -40,7 +41,7 @@ class TextBlock {
 
     public $font=__DIR__."/../fonts/animeace2_reg.ttf";
 
-    function __construct($mother_path,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4) {
+    function __construct($mother_path,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$denoiser) {
         $this->x1 = $x1;
         $this->y1 = $y1;
         $this->x2 = $x2;
@@ -50,6 +51,7 @@ class TextBlock {
         $this->x4 = $x4;
         $this->y4 = $y4;
         $this->mother_path = $mother_path;
+        $this->denoiser=$denoiser;
     }
 
         function load() {
@@ -70,6 +72,8 @@ class TextBlock {
             $this->extract_bloc();
             //$this->dominant_color();
             $this->dominant_color_alt();
+            if ($this->denoiser['enable'])
+            $this->denoise();
             $this->detect_text();
             $this->expand_block_text();
             $this->find_font_size();
@@ -102,6 +106,24 @@ class TextBlock {
               0,$image_height
           );
         }
+    }
+
+    private function denoise(){
+        $output_file="dump/denoised-".basename($this->path);
+        echo $output_file.'\n';
+        
+        $cmd=str_replace($this->denoiser['inputfilepattern'], $this->path, $this->denoiser['command']);
+        $cmd=str_replace($this->denoiser['outputfilepattern'], $output_file, $cmd);
+
+        exec($cmd,$output, $return_status);
+        if (file_exists("$output_file"))
+            $this->path = $output_file;
+        else
+            {
+                echo $this->path.": denoiser error:\n";
+                print_r($output);
+            }
+        
     }
 
     // Find parameters to fit text in image
@@ -154,13 +176,13 @@ if  (($angle < 90) && ($width < 60) && ($height / $width > 3)){
                 
        // }
 
-        if ($font_size <=7)
-        $font_size=8;
+        if ($font_size <=6)
+        $font_size=7;
         
         $dim["height"]  = $height;
         $dim["width"]  = $width;
         while (
-            ((( $dim["height"]  >= $height )||( $dim["width"]  >= $width )) && ($font_size > 7)) || 
+            ((( $dim["height"]  >= $height )||( $dim["width"]  >= $width )) && ($font_size > 6)) || 
             ((isset($horiz_width) && $txt_horiz_width >= $horiz_width ) || (isset($horiz_height) && $txt_horiz_height >= $horiz_height ))) {
             $image_heigth=$height;
             $image_width=$width;
