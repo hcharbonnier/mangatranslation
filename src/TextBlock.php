@@ -110,7 +110,6 @@ class TextBlock {
 
     private function denoise(){
         $output_file="dump/denoised-".basename($this->path);
-        echo $output_file.'\n';
         
         $cmd=str_replace($this->denoiser['inputfilepattern'], $this->path, $this->denoiser['command']);
         $cmd=str_replace($this->denoiser['outputfilepattern'], $output_file, $cmd);
