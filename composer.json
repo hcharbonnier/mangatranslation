@@ -18,5 +18,8 @@
         "psr-4": {
             "mangatranslation\\": "src/"
         }
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^0.12.17"
     }
 }
