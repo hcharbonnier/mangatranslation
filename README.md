@@ -22,7 +22,7 @@ I am not a developper, so this project code might be really ugly. :)
 * Remove old text from textboxes
 * Use Google API to translate
 * Adapt translation font size to fit in textboxes
-write translation in the corresponding textboxes
+* write translation in the corresponding textboxes
 
 ## Specials features
 * Support external denoiser (ie: Waifu2x) to improve OCR performance
