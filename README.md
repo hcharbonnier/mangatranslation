@@ -6,6 +6,16 @@ CPU Only, no cuda, no opencv, no machine learning
 ## Warning
 I am not a developper, so this project code might be really ugly. :)
 
+## Translation examples
+
+** Source **
+
+![Source](images/0004.jpg "Source")
+
+** Translated **
+
+![Translated](images/004-translated.jpg "Translated")
+
 
 ## Workflow summary
 * Open Jpeg image
