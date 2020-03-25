@@ -8,14 +8,11 @@ I am not a developper, so this project code might be really ugly. :)
 
 ## Translation examples
 
-** Source **
-
+### Source
 ![Source](images/0004.jpg "Source")
 
-** Translated **
-
-![Translated](images/004-translated.jpg "Translated")
-
+### Translated
+![Translated](images/0004-translated.jpg "Translated")
 
 ## Workflow summary
 * Open Jpeg image
