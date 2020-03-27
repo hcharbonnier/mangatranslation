@@ -3,19 +3,19 @@ namespace mangatranslation;
 
 #require __DIR__ . '/vendor/autoload.php';
 
+require_once("funtions.php");
 # imports the Google Cloud client library
 use Google\Cloud\Vision\V1\ImageAnnotatorClient;
 use Google\Cloud\Translate\TranslateClient;
 
 use ColorThief\ColorThief;
-require_once "function.php";
 
 //  text_bloc: block text in a page
 class TextBlock {
     public $image;
     public $mother_image;
     public $path;
-    public $mother_path;
+    public $mother_name;
     public $x1;
     public $y1;
     public $x2;
@@ -24,7 +24,6 @@ class TextBlock {
     public $y3;
     public $x4;
     public $y4;
-    public $denoiser=array();
     //    public $background_color;
     public $background_color_alt;
     public $ocr_text;
@@ -41,7 +40,7 @@ class TextBlock {
     
     public $font=__DIR__."/../fonts/animeace2_reg.ttf";
     
-    function __construct($mother_path,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$denoiser) {
+    function __construct($mother_name,$motherimage,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4) {
         $this->x1 = $x1;
         $this->y1 = $y1;
         $this->x2 = $x2;
@@ -50,8 +49,8 @@ class TextBlock {
         $this->y3 = $y3;
         $this->x4 = $x4;
         $this->y4 = $y4;
-        $this->mother_path = $mother_path;
-        $this->denoiser=$denoiser;
+        $this->mother_image = cloneImg($motherimage);
+        $this->mother_name= $mother_name;
     }
     
     function load() {
@@ -63,23 +62,16 @@ class TextBlock {
         $y3=$this->y3;
         $x4=$this->x4;
         $y4=$this->y4;
-        $mother_path=$this->mother_path;
         $this->reorder_points();
         $this->text_angle = round($this->pixels_angle2(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
-        // echo "angle:".$this->text_angle."\n";
-        //echo "x1:".(($x1+$x4)/2)." y1:". (($y1+$y4)/2)." x2:".(($x2+$x3)/2)." y2:".(($y2+$y3)/2)."\n;";
-        $this->mother_image = imagecreatefromjpeg($mother_path);
         $this->extract_bloc();
-        //$this->dominant_color();
         $this->dominant_color_alt();
-        if ($this->denoiser['enable'])
-          $this->denoise();
         $this->detect_text();
         $this->expand_block_text();
         $this->find_font_size();
         $this->font_size=$this->original_font_size;
         
-        $this->translated_text=translate($this->ocr_text, "en");
+        $this->translated_text=$this->translate_string($this->ocr_text, "en");
         
         $formatted_text=$this->format_text($this->x3-$this->x1,$this->y4-$this->y2, $this->text_angle, $this->font, $this->font_size, $this->translated_text,11);
         $this->translation_width = $formatted_text['width_px'];
@@ -90,41 +82,16 @@ class TextBlock {
         //echo($this->formatted_text);
         $this->font_size=$formatted_text['size'];
     }
-    
-    //Unused function
-    /*function get_redressed_textbox_dimentions(){
-        if ($angle !=0) {
-            $tmpimage= imagecreatetruecolor(8000, 8000);
-            $white = imagecolorallocate($tmpimage, 255, 255, 255);
-            $black = imagecolorallocate($tmpimage, 0, 0, 0);
-            imagefilledrectangle($tmpimage, 0, 0, 7999, 7999, $white);
-            $pol=array(
-                $this->x4,$image_height,
-                $this->x4,$this->y4,
-                $this->x1,$this->y1,
-                0,$this->y1,
-                0,$image_height
-            );
-        }
-    }*/ 
-    
-    private function denoise(){
-        $output_file="dump/denoised-".basename($this->path);
         
-        $cmd=str_replace($this->denoiser['inputfilepattern'], $this->path, $this->denoiser['command']);
-        $cmd=str_replace($this->denoiser['outputfilepattern'], $output_file, $cmd);
-        
-        exec($cmd,$output, $return_status);
-        if (file_exists("$output_file"))
-        $this->path = $output_file;
-        else
-        {
-            echo $this->path.": denoiser error:\n";
-            print_r($output);
-        }
-        
-    }
-    
+    function translate_string ($text,$targetLanguage){
+  
+        $translate = new TranslateClient();
+        $result = $translate->translate($text, [
+          'target' => $targetLanguage,
+          ]);
+          
+          return($result["text"]);
+        }  
     // Find parameters to fit text in image
     function format_text($width, $height, $angle, $font, $font_size, $text,$border=0) 
     {
@@ -144,7 +111,7 @@ class TextBlock {
         
         // Ugly angle hack
         if  (($angle < 90) && ($width < 60) && ($height / $width > 3)){
-            echo "ugly angle hack: ".$this->mother_path.":\n";
+            echo "ugly angle hack: ".$this->mother_name.":\n";
             echo "$text\n";
             $angle = $angle +90;
             $this->text_angle =$angle;
@@ -169,7 +136,6 @@ class TextBlock {
             $horiz_height=max(imagesy($tmpimage)-(2*$border), 2*$border+8);
             $txt_horiz_width=$horiz_width;
             $txt_horiz_height=$horiz_height;
-            imagejpeg($tmpimage,"dump/angle_img.jpg");
             
         }
         
@@ -200,7 +166,7 @@ class TextBlock {
                 //for each word
                 for ($i=0; isset($arr[$i]);$i++){
                     //we calculate word dimensions
-                    $arr_stat=calculateTextBox($size, $angle, $font, $arr[$i].'#');
+                    $arr_stat=$this->calculateTextBox($size, $angle, $font, $arr[$i].'#');
                     
                     //if  word +current ligne length larger than line, we change line
                     if ($line_length +$arr_stat['width'] > $max_line_length){
@@ -215,9 +181,9 @@ class TextBlock {
                 }
                 
                 $text_res=implode("\n", $res);
-                $dim=(calculateTextBox($size, $angle, $font, $text_res));
+                $dim=($this->calculateTextBox($size, $angle, $font, $text_res));
                 if ($angle != 0){
-                    $tmp=(calculateTextBox($size, 0, $font, $text_res));
+                    $tmp=($this->calculateTextBox($size, 0, $font, $text_res));
                     $txt_horiz_width=$tmp['width'];
                     $txt_horiz_height=$tmp['height'];
                 }
@@ -230,7 +196,7 @@ class TextBlock {
                 imagefilledrectangle($image, 0, 0, $height-1, $width-1, $white);
                 imagettftext (  $image , $size , $angle , $x ,  $y ,  $black , $font ,  $text_res );
                 
-                imagejpeg($image,"test.jpg");
+                //imagejpeg($image,"test.jpg");
                 $resultat['font']=$font;
                 $resultat['text']=$text_res;
                 $resultat['size']=$size;
@@ -252,14 +218,11 @@ class TextBlock {
             imagejpeg($this->image,NULL,100);
             $image = ob_get_contents();
             ob_end_clean(); // stop this output buffer
-            //        $path=$this->path;
             $resultats=array();
             $j=0;
             $imageAnnotator = new ImageAnnotatorClient();
             
             # annotate the image
-            //$image = file_get_contents($path);
-            //$image=imagejpeg($this->image);
             $response = $imageAnnotator->textDetection($image);
             $texts = $response->getTextAnnotations();
             $i=0;
@@ -343,16 +306,6 @@ class TextBlock {
         return $bac;
     }
     
-    // return array(red,green, blue) color of a pixel
-    private function pixel_color($path, $x,$y) {
-        $im = imagecreatefrompng($path);
-        $rgb = imagecolorat($im, 10, 15);
-        $r = ($rgb >> 16) & 0xFF;
-        $g = ($rgb >> 8) & 0xFF;
-        $b = $rgb & 0xFF;
-        return(array($r,$g,$b));
-    }
-    
     private function reorder_points (){
         //If text is not horizontal, we need x2,y2 to be the higher point (needed by extract_bloc())
         while (( min($this->y1,$this->y3,$this->y4,) < $this->y2 -2) && ( max($this->y1,$this->y2,$this->y3,) > $this->y4 +2)){
@@ -376,9 +329,11 @@ class TextBlock {
         //image crop don't work with text with angles
         // so we fill everythin wich is not text in white,
         // and then use autocrop
-        $image = imagecreatefromjpeg($this->mother_path);
+        $image = cloneImg($this->mother_image);
         $white   = imagecolorallocate($image, 255, 255, 255);
-        list($image_width, $image_height, $type, $attr) = getimagesize($this->mother_path);        
+        $image_width = imagesx($image);
+        $image_height = imagesy($image);
+        
 
         // block height can't be < 4 pixels
         if (max($this->y3, $this->y4) - min($this->y1,$this->y2) < 4){
@@ -427,36 +382,59 @@ class TextBlock {
             0,$this->y1,
             0,$image_height
         );
-        
-        //        echo "x1:". $this->x1. " ";
-        //        echo "y1:". $this->y1. " ";
-        //        echo "x2:". $this->x2. " ";
-        //        echo "y2:". $this->y2. " ";
-        //        echo "x3:". $this->x3. " ";
-        //        echo "y3:". $this->y3. " ";
-        //        echo "x4:". $this->x4. " ";
-        //        echo "y4:". $this->y4. "\n";
-        
-        
+
         imagefilledpolygon($image, $pol1, 5, $white);
         imagefilledpolygon($image, $pol2, 5, $white);
         imagefilledpolygon($image, $pol3, 5, $white);
         imagefilledpolygon($image, $pol4, 5, $white);
-/*echo "_____________________\n";
-        echo "image:".$this->mother_path."\n";
-        print_r($pol1);
-        print_r($pol2);
-        print_r($pol3);
-        print_r($pol4); */
         $this->image=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0.1, $white);
-        @mkdir("dump");
-        $this->path='dump/'.basename($this->mother_path).'-'.$this->x1.'-'.$this->y1.'.jpg';
-        imagejpeg($this->image,$this->path);
     }
+
+    //Calculate dimension of image generated from a string
+    function calculateTextBox($font_size, $font_angle, $font_file, $text) {
+        $box   = imagettfbbox($font_size, $font_angle, $font_file, $text);
+        if( !$box )
+        return false;
+        $min_x = min( array($box[0], $box[2], $box[4], $box[6]) );
+        $max_x = max( array($box[0], $box[2], $box[4], $box[6]) );
+        $min_y = min( array($box[1], $box[3], $box[5], $box[7]) );
+        $max_y = max( array($box[1], $box[3], $box[5], $box[7]) );
+        $width  = ( $max_x - $min_x );
+        $height = ( $max_y - $min_y );
+        $left   = abs( $min_x ) + $width;
+        $top    = abs( $min_y ) + $height;
+        // to calculate the exact bounding box i write the text in a large image
+        $img     = @imagecreatetruecolor( $width << 2, $height << 2 );
+        $white   =  imagecolorallocate( $img, 255, 255, 255 );
+        $black   =  imagecolorallocate( $img, 0, 0, 0 );
+        imagefilledrectangle($img, 0, 0, imagesx($img), imagesy($img), $black);
+        // for sure the text is completely in the image!
+        imagettftext( $img, $font_size,
+        $font_angle, $left, $top,
+        $white, $font_file, $text);
+        // start scanning (0=> black => empty)
+        $rleft  = $w4 = $width<<2;
+        $rright = 0;
+        $rbottom   = 0;
+        $rtop = $h4 = $height<<2;
+        for( $x = 0; $x < $w4; $x++ )
+        for( $y = 0; $y < $h4; $y++ )
+        if( imagecolorat( $img, $x, $y ) ){
+          $rleft   = min( $rleft, $x );
+          $rright  = max( $rright, $x );
+          $rtop    = min( $rtop, $y );
+          $rbottom = max( $rbottom, $y );
+        }
+        // destroy img and serve the result
+        imagedestroy( $img );
+        return array( "left"   => $left - $rleft,
+        "top"    => $top  - $rtop,
+        "width"  => $rright - $rleft + 1,
+        "height" => $rbottom - $rtop + 1 );
+      }
     
-    function expand_block_text($tolerance=50,$offset=5){
+    function expand_block_text($color_tolerance=50,$offset=5){
         //known bug: To bloc can expand over eachother
-        $mother_path=$this->mother_path;
         $background=$this->background_color_alt;
         $x1=$this->x1 - $offset;
         $y1=$this->y1 - $offset;
@@ -498,9 +476,9 @@ class TextBlock {
                 $rgb=imagecolorat($image,$x,$y);
                 $colors=imagecolorsforindex($image,$rgb);
                 if ( 
-                    (abs($colors['red'] - $background[0]) >$tolerance) ||
-                    (abs($colors['green'] - $background[1]) >$tolerance) ||
-                    (abs($colors['blue'] - $background[2]) >$tolerance))
+                    (abs($colors['red'] - $background[0]) >$color_tolerance) ||
+                    (abs($colors['green'] - $background[1]) >$color_tolerance) ||
+                    (abs($colors['blue'] - $background[2]) >$color_tolerance))
                     {
                         $doleft =false;
                     }
@@ -517,9 +495,9 @@ class TextBlock {
                     $rgb=imagecolorat($image,$x,$y);
                     $colors=imagecolorsforindex($image,$rgb);
                     if ( 
-                        (abs($colors['red'] - $background[0]) >$tolerance) ||
-                        (abs($colors['green'] - $background[1]) >$tolerance) ||
-                        (abs($colors['blue'] - $background[2]) >$tolerance))
+                        (abs($colors['red'] - $background[0]) >$color_tolerance) ||
+                        (abs($colors['green'] - $background[1]) >$color_tolerance) ||
+                        (abs($colors['blue'] - $background[2]) >$color_tolerance))
                         {
                             $dotop =false;
                         }
@@ -536,9 +514,9 @@ class TextBlock {
                         $rgb=imagecolorat($image,$x,$y);
                         $colors=imagecolorsforindex($image,$rgb);
                         if ( 
-                            (abs($colors['red'] - $background[0]) >$tolerance) ||
-                            (abs($colors['green'] - $background[1]) >$tolerance) ||
-                            (abs($colors['blue'] - $background[2]) >$tolerance))
+                            (abs($colors['red'] - $background[0]) >$color_tolerance) ||
+                            (abs($colors['green'] - $background[1]) >$color_tolerance) ||
+                            (abs($colors['blue'] - $background[2]) >$color_tolerance))
                             {
                                 $doright =false;
                             }
@@ -556,9 +534,9 @@ class TextBlock {
                             $rgb=imagecolorat($image,$x,$y);
                             $colors=imagecolorsforindex($image,$rgb);
                             if ( 
-                                (abs($colors['red'] - $background[0]) >$tolerance) ||
-                                (abs($colors['green'] - $background[1]) >$tolerance) ||
-                                (abs($colors['blue'] - $background[2]) >$tolerance))
+                                (abs($colors['red'] - $background[0]) >$color_tolerance) ||
+                                (abs($colors['green'] - $background[1]) >$color_tolerance) ||
+                                (abs($colors['blue'] - $background[2]) >$color_tolerance))
                                 {
                                     $dobottom =false;
                                 }

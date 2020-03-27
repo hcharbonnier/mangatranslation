@@ -3,10 +3,10 @@ namespace mangatranslation;
 
 #require __DIR__ . '/vendor/autoload.php';
 
+require_once("funtions.php");
+
 # imports the Google Cloud client library
 use Google\Cloud\Vision\V1\ImageAnnotatorClient;
-
-require_once "function.php";
 
 define ('FEATURE_PAGE', 1);
 define ('FEATURE_BLOCK', 2);
@@ -18,46 +18,63 @@ define ('FEATURE_SYMBOL', 5);
 class MangaImage
 {
   public $path=null;
-  public $image=null;
-  public $image_drawn=null;
+  private $image=null;
+  private $image_drawn=null;
   public $text_blocks=[];
-  //public $bounds=null;
-  //public $ocr_text=null;
-  //public $trans_text=null;
-  public $clean_image=null;
-  public $final_image=null;
-  public $translated_path=null;
-  public $clean_path=null;
+  public $textbox_merge_tolerance=20;
+  private $cleaned_image=null;
+  private $final_image=null;
+  private $response=null;
+  private $annotation=null;
+  private $denoiser=array("enable" => false);
+  public $output_file=null;
   
-  public $response=null;
-  public $annotation=null;
-  public $denoiser=array("enable" => false);
-  
-  function __construct($path) {
+  function __construct($path, $output_file) {
     $this->path = $path;
+    $this->output_file=$output_file;
   }
   
   function load(){
-    $this->image = file_get_contents($this->path);
-    
+    if ($this->denoiser['enable'])
+      $this->denoise();
+    $this->image = imagecreatefromany($this->path);
     # performs label detection on the image file
     $imageAnnotator = new ImageAnnotatorClient();
-    $this->response = $imageAnnotator->textDetection($this->image);
+    $this->response = $imageAnnotator->textDetection(file_get_contents($this->path));
     $this->annotation = $this->response->getFullTextAnnotation();
     $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
-    $this->draw_boxes2($this->path);
-    $this->merge_similar_bloc();
+  //  $this->draw_boxes2(cloneImg($this->image));
+    $this->merge_similar_bloc($this->textbox_merge_tolerance);
     
     foreach ($this->text_blocks as $text_block) {
       $text_block->load();
     }
     
-    $this->draw_boxes2($this->path,1,1);
+    //$this->draw_boxes2(cloneImg($this->image),1,1);
     $this->clean_image();
     $this->insert_translations();
     //$this->draw_boxes($this->path,$this->bounds);
     //$this->extract_bounds($this->path,$this->bounds);
+
+    imagejpeg($this->final_image,$this->output_file); 
   }
+
+  private function denoise(){
+    $mkdir("tmp/");
+    $output_file="tmp/".basename($this->path);
+    
+    $cmd=str_replace($this->denoiser['inputfilepattern'], $this->path, $this->denoiser['command']);
+    $cmd=str_replace($this->denoiser['outputfilepattern'], $output_file, $cmd);
+    
+    exec($cmd,$output, $return_status);
+    if (file_exists("$output_file"))
+    $this->path = $output_file;
+    else
+    {
+        echo $this->path.": denoiser error:\n";
+        print_r($output);
+    }
+}
   
   //Only for Before OCR, not on final image
   public function external_denoiser( $denoiser_cmd, $outputfilepattern="_DENOISEROUTPUTFILE_" ,$inputfilepattern="_DENOISERINPUTFILE_") {
@@ -66,43 +83,7 @@ class MangaImage
     $this->denoiser['inputfilepattern']=$inputfilepattern;
     $this->denoiser['outputfilepattern']=$outputfilepattern;
   }
-  
-  //debug function
-  function dump(){
-    echo("\n#########################DUMP START#########################");
-    echo("\npath:".$this->path);
-    
-    //echo("\nocr_text:");
-    //@print_r($this->ocr_text);
-    
-    //echo("\ntrans_text:");
-    //@print_r($this->trans_text);
-    
-    echo("\ntext_blocks:");
-    @print_r($this->text_blocks);
-    
-    @mkdir('dump');
-    $i=0;
-    foreach($this->text_blocks as $block) {
-      imagejpeg($block->image,'./dump/'.$i.'.jpg');
-      $dominantColors = ColorThief::getPalette('./dump/'.$i.'.jpg',$colorCount=2);
-      
-      if ($dominantColors[0][0]+$dominantColors[0][1]+$dominantColors[0][2] > $dominantColors[1][0]+$dominantColors[1][1]+$dominantColors[1][2])
-      $dominantColor=$dominantColors[0];
-      else
-      $dominantColor=$dominantColors[1];
-      echo ("\n./dump/".$i.'.jpg RGB:('.$dominantColor[0].','.$dominantColor[1].','.$dominantColor[2].')');
-      
-      $i++;
-    }
-    
-    @imagejpeg($this->image_drawn,'./dump/boxes.jpg');
-    @imagejpeg($this->image,'./dump/ori.jpg');
-    @imagejpeg($this->clean_image,'./dump/clean.jpg');
-    echo("\nimages dump in dump folder.");
-    echo("\n######################### DUMP END #########################\n");
-  }
-  
+
   // return coordonates of a bound
   private function bound_to_coord($bound){
     $vertices=$bound->getVertices();
@@ -125,27 +106,27 @@ class MangaImage
     foreach ($annotation->getPages() as $page) {
       if ($feature == FEATURE_PAGE){
         $coord=$this->bound_to_coord($page->getBoundingBox());
-        array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
+        array_push($this->text_blocks , new TextBlock(basename($this->path),$this->image,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
       }
       foreach ($page->getBlocks() as $block) {
         if ($feature == FEATURE_BLOCK) {
           $coord=$this->bound_to_coord($block->getBoundingBox());
-          array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
+          array_push($this->text_blocks , new TextBlock(basename($this->path),$this->image,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
         }
         foreach ($block->getParagraphs() as $paragraph) {
           if ($feature == FEATURE_PARA){
             $coord=$this->bound_to_coord($paragraph->getBoundingBox());
-            array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
+            array_push($this->text_blocks , new TextBlock(basename($this->path),$this->image,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
           }
           foreach ($paragraph->getWords() as $word) {
             if ($feature == FEATURE_WORD){
               $coord=$this->bound_to_coord($word->getBoundingBox());
-              array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
+              array_push($this->text_blocks , new TextBlock(basename($this->path),$this->image,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
             }
             foreach ($word->getSymbols() as $symbol) {
               if ($feature == FEATURE_SYMBOL){
                 $coord=$this->bound_to_coord($symbol->getBoundingBox());
-                array_push($this->text_blocks , new TextBlock($this->path,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],$this->denoiser));
+                array_push($this->text_blocks , new TextBlock(basename($this->path),$this->image,$coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']));
               }
             }
           }
@@ -155,26 +136,7 @@ class MangaImage
   }
   
   //Debug function to draw rectangle arrounf detected text boxes
-  function draw_boxes ($fileName,$bounds) {
-    
-    $image = imagecreatefromjpeg($fileName);
-    $black = imagecolorallocate($image, 0, 0, 0);
-    
-    $color=$black;
-    foreach($bounds as $bound) {
-      $vertices=$bound->getVertices();
-      imageline ( $image ,  $vertices[0]->getX() ,  $vertices[0]->getY(),  $vertices[1]->getX() ,  $vertices[1]->getY() , $color );
-      imageline ( $image ,  $vertices[1]->getX() ,  $vertices[1]->getY(),  $vertices[2]->getX() ,  $vertices[2]->getY() , $color );
-      imageline ( $image ,  $vertices[2]->getX() ,  $vertices[2]->getY(),  $vertices[3]->getX() ,  $vertices[3]->getY() , $color );
-      imageline ( $image ,  $vertices[3]->getX() ,  $vertices[3]->getY(),  $vertices[0]->getX() ,  $vertices[0]->getY() , $color );
-    }
-    $this->image_drawn=$image;
-    @imagejpeg($this->image_drawn,'./dump/boxes.jpg');
-  }
-  
-  function draw_boxes2 ($fileName, $color=0, $offset=0) {
-    
-    $image = imagecreatefromjpeg($fileName);
+  function draw_boxes2 ($image, $color=0, $offset=0) {
     
     $black = imagecolorallocate($image, 0, 0, 0);
     $red = imagecolorallocate($image, 255, 0, 0);
@@ -191,30 +153,13 @@ class MangaImage
       imageline ( $image ,  $text_block->x4 -$offset , $text_block->y4 +$offset, $text_block->x1 -$offset, $text_block->y1-$offset , $linecolor);
     }
     $this->image_drawn=$image;
+    mkdir("dump");
     @imagejpeg($this->image_drawn,'dump/boxes'.basename($fileName).'-'.$offset.'-'.'.jpg');
   }
   
-  
-  /*function extract_bounds($fileName,$bounds) {
-    $image = imagecreatefromjpeg($fileName);
-    $images=[];
-    foreach($bounds as $bound) {
-      $vertices=$bound->getVertices();
-      $rect=[
-        'x' => $vertices[0]->getX()-1,
-        'y' => $vertices[0]->getY()-1,
-        'width' => abs($vertices[2]->getX()-$vertices[0]->getX()+2),
-        'height' => abs($vertices[2]->getY()-$vertices[0]->getY()+2)
-      ];
-      $extract=imagecrop($image, $rect);
-      array_push($images,$extract);
-    }
-    $this->extracts = $images;
-  }*/
-  
   // remove existing text in manga image
   function clean_image () {
-    $this->clean_image = imagecreatefromjpeg($this->path);
+    $this->cleaned_image = cloneImg($this->image);
     foreach ($this->text_blocks as $block) {
       $x1=$block->x1;
       $y1=$block->y1;
@@ -228,12 +173,9 @@ class MangaImage
       $r=$block->background_color_alt[0];
       $g=$block->background_color_alt[1];
       $b=$block->background_color_alt[2];
-      $background = imagecolorallocate($this->clean_image, $r, $g, $b);
+      $background = imagecolorallocate($this->cleaned_image, $r, $g, $b);
       $polygon=array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
-      imagefilledpolygon($this->clean_image,$polygon,4,$background);
-      @mkdir("clean");
-      $this->clean_path="clean/".basename($this->path);          
-      imagejpeg($this->clean_image,$this->clean_path); 
+      imagefilledpolygon($this->cleaned_image,$polygon,4,$background);
     }
   }
   
@@ -289,7 +231,7 @@ class MangaImage
   
   //write translated text over cleaned image
   function insert_translations() {
-    $this->final_image = imagecreatefromjpeg($this->clean_path);
+    $this->final_image = cloneImg($this->cleaned_image);
     foreach ($this->text_blocks as $block) {
       $black = imagecolorallocate($this->final_image, 0, 0, 0);
       $red = imagecolorallocate($this->final_image, 255, 0, 0);
@@ -313,9 +255,6 @@ class MangaImage
         $black,
         $block->font,
         $block->formatted_text );
-        @mkdir("translated");
-        $this->translated_path="translated/".basename($this->path);          
-        imagejpeg($this->final_image,$this->translated_path); 
       }
     }
   }
