@@ -43,18 +43,16 @@ class MangaImage
     $this->response = $imageAnnotator->textDetection(file_get_contents($this->path));
     $this->annotation = $this->response->getFullTextAnnotation();
     $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
-  //  $this->draw_boxes2(cloneImg($this->image));
+    $this->draw_boxes2(cloneImg($this->image));
     $this->merge_similar_bloc($this->textbox_merge_tolerance);
     
     foreach ($this->text_blocks as $text_block) {
       $text_block->load();
     }
     
-    //$this->draw_boxes2(cloneImg($this->image),1,1);
+    $this->draw_boxes2(cloneImg($this->image),1,1);
     $this->clean_image();
     $this->insert_translations();
-    //$this->draw_boxes($this->path,$this->bounds);
-    //$this->extract_bounds($this->path,$this->bounds);
 
     imagejpeg($this->final_image,$this->output_file); 
   }
@@ -153,7 +151,7 @@ class MangaImage
       imageline ( $image ,  $text_block->x4 -$offset , $text_block->y4 +$offset, $text_block->x1 -$offset, $text_block->y1-$offset , $linecolor);
     }
     $this->image_drawn=$image;
-    mkdir("dump");
+    @mkdir("dump");
     @imagejpeg($this->image_drawn,'dump/boxes'.basename($fileName).'-'.$offset.'-'.'.jpg');
   }
   
@@ -232,10 +230,11 @@ class MangaImage
   //write translated text over cleaned image
   function insert_translations() {
     $this->final_image = cloneImg($this->cleaned_image);
+    $black = imagecolorallocate($this->final_image, 0, 0, 0);
+    $red = imagecolorallocate($this->final_image, 255, 0, 0);
+    $yellow = imagecolorallocate($this->final_image, 255, 255, 0);
+
     foreach ($this->text_blocks as $block) {
-      $black = imagecolorallocate($this->final_image, 0, 0, 0);
-      $red = imagecolorallocate($this->final_image, 255, 0, 0);
-      $yellow = imagecolorallocate($this->final_image, 255, 255, 0);
       
       $translation_width=$block->translation_width;
       $translation_height=$block->translation_height;

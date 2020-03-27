@@ -62,8 +62,8 @@ class TextBlock {
         $y3=$this->y3;
         $x4=$this->x4;
         $y4=$this->y4;
-        $this->reorder_points();
         $this->text_angle = round($this->pixels_angle2(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
+        $this->reorder_points();
         $this->extract_bloc();
         $this->dominant_color_alt();
         $this->detect_text();
@@ -95,6 +95,7 @@ class TextBlock {
     // Find parameters to fit text in image
     function format_text($width, $height, $angle, $font, $font_size, $text,$border=0) 
     {
+
         if (trim($text) == "" ) {
             $resultat['font']=$font;
             $resultat['text']=$text;
@@ -109,14 +110,6 @@ class TextBlock {
         $width=max($width-(2*$border), 2*$border+8);
         $height=max($height-(2*$border), 2*$border+8);
         
-        // Ugly angle hack
-        if  (($angle < 90) && ($width < 60) && ($height / $width > 3)){
-            echo "ugly angle hack: ".$this->mother_name.":\n";
-            echo "$text\n";
-            $angle = $angle +90;
-            $this->text_angle =$angle;
-        }
-        // Ugly angle hack end
         if ($angle !=0) {
             $tmpimage= imagecreatetruecolor(8000, 8000);
             $white = imagecolorallocate($tmpimage, 255, 255, 255);
@@ -305,11 +298,20 @@ class TextBlock {
         $bac = rad2deg(acos($tmp));
         return $bac;
     }
-    
-    private function reorder_points (){
-        //If text is not horizontal, we need x2,y2 to be the higher point (needed by extract_bloc())
-        while (( min($this->y1,$this->y3,$this->y4,) < $this->y2 -2) && ( max($this->y1,$this->y2,$this->y3,) > $this->y4 +2)){
-            //echo "rotate\n";
+
+    //Reorder pixel coordinates and fix angle
+    private function reorder_points ($marge=3){
+        $rotate=0;
+        while (
+                ( $this->x1 >=  $this->x2 ) ||
+                ( $this ->y2 >= $this->y3) ||
+                ($this ->x3 <= $this ->x4) ||
+                ($this ->y4 <= $this ->y1)  ||
+                ($this ->x4 +$marge< $this ->x1) ||
+                ($this ->y2 -$marge> $this ->y1)
+              ){
+            $rotate++;
+            echo "rotate\n";
             $tmpx=$this->x1;
             $tmpy=$this->y1;
             $this->x1=$this->x2;
@@ -321,7 +323,12 @@ class TextBlock {
             $this->x4=$tmpx;
             $this->y4=$tmpy;
         }
-        
+        if ($rotate ==1)
+            $this->text_angle=2*90-$this->text_angle;
+        if ($rotate ==2)
+            $this->text_angle=2*90+$this->text_angle;;
+        if ($rotate ==3)
+            $this->text_angle=3*90+(90-$this->text_angle);  
     }
     
     //Extract bloc textimage from manga image
