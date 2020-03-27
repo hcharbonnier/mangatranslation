@@ -57,22 +57,20 @@ composer install
 ## Example
 ```php
 <?php
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php'; // Autoload files using Composer autoload
 
 use mangatranslation\MangaImage;
 use mangatranslation\TextBlock;
 
-$test = new MangaImage($argv[1]);
-
-## I use php in WSL, so there is a mix Windows and Linux path here, so don't be surprised :D
+$test = new MangaImage($argv[1],$argv[2] );
 $test->external_denoiser (
-    'cmd.exe /mnt/c/Users/Hugues/Downloads/waifu2x/waifu2x-converter-cpp.exe --force-OpenCL --model-dir \'C:\Users\Hugues\Downloads\waifu2x\models_rgb\' --scale-ratio 2 --noise-level 3 -m noise-scale -i _DENOISERINPUTFILE_ -o _DENOISEROUTPUTFILE_'
+    'cmd.exe /mnt/c/Users/Hugues/Downloads/waifu2x/waifu2x-converter-cpp.exe --force-OpenCL --model-dir \'C:\Users\Hugues\Downloads\waifu2x\models_rgb\' --scale-ratio 2 --noise-level 1 -m noise-scale -i _DENOISERINPUTFILE_ -o _DENOISEROUTPUTFILE_'
 );
-
 $test->load();
+
 ```
 Then run:
 ```sh
 $ export GOOGLE_APPLICATION_CREDENTIALS=PATH_TO_GOOGLE_PROJECT.json
-$ php example.php image.jpeg
+$ php example.php image.jpg translated.jpg
 ```
