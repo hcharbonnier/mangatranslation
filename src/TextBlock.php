@@ -73,7 +73,7 @@ class TextBlock {
         //$this->dominant_color();
         $this->dominant_color_alt();
         if ($this->denoiser['enable'])
-        $this->denoise();
+          $this->denoise();
         $this->detect_text();
         $this->expand_block_text();
         $this->find_font_size();
@@ -379,6 +379,23 @@ class TextBlock {
         $image = imagecreatefromjpeg($this->mother_path);
         $white   = imagecolorallocate($image, 255, 255, 255);
         list($image_width, $image_height, $type, $attr) = getimagesize($this->mother_path);        
+
+        // block height can't be < 4 pixels
+        if (max($this->y3, $this->y4) - min($this->y1,$this->y2) < 4){
+            $this->y1-=1;
+            $this->y2-=1;
+            $this->y3+=1;
+            $this->y4+=1;
+        }
+
+        // block width can't be < 4 pixels
+        if (max($this->x2, $this->x3) - min($this->x1,$this->x4) < 4){
+            $this->x1-=1;
+            $this->x2+=1;
+            $this->x3+=1;
+            $this->x4-=1;
+        }
+
         $pol1=array(
             0,0,
             $this->x2,0,
@@ -425,6 +442,12 @@ class TextBlock {
         imagefilledpolygon($image, $pol2, 5, $white);
         imagefilledpolygon($image, $pol3, 5, $white);
         imagefilledpolygon($image, $pol4, 5, $white);
+/*echo "_____________________\n";
+        echo "image:".$this->mother_path."\n";
+        print_r($pol1);
+        print_r($pol2);
+        print_r($pol3);
+        print_r($pol4); */
         $this->image=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0.1, $white);
         @mkdir("dump");
         $this->path='dump/'.basename($this->mother_path).'-'.$this->x1.'-'.$this->y1.'.jpg';
