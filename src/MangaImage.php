@@ -43,22 +43,22 @@ class MangaImage
     $this->response = $imageAnnotator->textDetection(file_get_contents($this->path));
     $this->annotation = $this->response->getFullTextAnnotation();
     $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
-    $this->draw_boxes2(cloneImg($this->image));
+    //$this->draw_boxes2(cloneImg($this->image));
     $this->merge_similar_bloc($this->textbox_merge_tolerance);
-    
+    $i=0;
     foreach ($this->text_blocks as $text_block) {
       $text_block->load();
     }
-    
-    $this->draw_boxes2(cloneImg($this->image),1,1);
+    //$this->draw_boxes2(cloneImg($this->image),1,1);
     $this->clean_image();
     $this->insert_translations();
-
-    imagejpeg($this->final_image,$this->output_file); 
+    imagewrite($this->final_image,$this->output_file); 
   }
 
   private function denoise(){
-    $mkdir("tmp/");
+    //@mkdir(sys_get_temp_dir()."/mangatranslation");
+    //$output_file=sys_get_temp_dir()."/mangatranslation".basename($this->path);
+    @mkdir("tmp/");
     $output_file="tmp/".basename($this->path);
     
     $cmd=str_replace($this->denoiser['inputfilepattern'], $this->path, $this->denoiser['command']);
@@ -230,17 +230,16 @@ class MangaImage
   //write translated text over cleaned image
   function insert_translations() {
     $this->final_image = cloneImg($this->cleaned_image);
-    $black = imagecolorallocate($this->final_image, 0, 0, 0);
-    $red = imagecolorallocate($this->final_image, 255, 0, 0);
-    $yellow = imagecolorallocate($this->final_image, 255, 255, 0);
-
     foreach ($this->text_blocks as $block) {
+      $black = imagecolorallocate($this->final_image, 0, 0, 0);
+      $red = imagecolorallocate($this->final_image, 255, 0, 0);
+      $yellow = imagecolorallocate($this->final_image, 255, 255, 0);
       
       $translation_width=$block->translation_width;
       $translation_height=$block->translation_height;
       
-      $block_center_x=($block->x1+$block->x2+$block->x3+$block->x4)/4;
-      $block_center_y=($block->y1+$block->y2+$block->y3+$block->y4)/4;
+      $block_center_x=($block->ori['x1']+$block->ori['x2']+$block->ori['x3']+$block->ori['x4'])/4;
+      $block_center_y=($block->ori['y1']+$block->ori['y2']+$block->ori['y3']+$block->ori['y4'])/4;
       
       $insert_x=$block_center_x-($translation_width/2);
       $insert_y=$block_center_y-($translation_height/2)+$block->translation_top_offset;

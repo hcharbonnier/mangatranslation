@@ -24,6 +24,7 @@ class TextBlock {
     public $y3;
     public $x4;
     public $y4;
+    public $ori=array();
     //    public $background_color;
     public $background_color_alt;
     public $ocr_text;
@@ -49,7 +50,9 @@ class TextBlock {
         $this->y3 = $y3;
         $this->x4 = $x4;
         $this->y4 = $y4;
+        
         $this->mother_image = cloneImg($motherimage);
+        
         $this->mother_name= $mother_name;
     }
     
@@ -69,17 +72,14 @@ class TextBlock {
         $this->detect_text();
         $this->expand_block_text();
         $this->find_font_size();
-        $this->font_size=$this->original_font_size;
-        
+        $this->font_size=$this->original_font_size;        
         $this->translated_text=$this->translate_string($this->ocr_text, "en");
-        
-        $formatted_text=$this->format_text($this->x3-$this->x1,$this->y4-$this->y2, $this->text_angle, $this->font, $this->font_size, $this->translated_text,11);
+        $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
         $this->translation_width = $formatted_text['width_px'];
         $this->translation_height = $formatted_text['height_px'];
         $this->translation_top_offset= $formatted_text['top'];
         $this->translation_left_offset = $formatted_text['left'];
         $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
-        //echo($this->formatted_text);
         $this->font_size=$formatted_text['size'];
     }
         
@@ -93,7 +93,7 @@ class TextBlock {
           return($result["text"]);
         }  
     // Find parameters to fit text in image
-    function format_text($width, $height, $angle, $font, $font_size, $text,$border=0) 
+    function format_text( $font, $font_size, $text,$border=0) 
     {
 
         if (trim($text) == "" ) {
@@ -107,45 +107,36 @@ class TextBlock {
             return $resultat;
         }
         
-        $width=max($width-(2*$border), 2*$border+8);
-        $height=max($height-(2*$border), 2*$border+8);
+       // $width=max($width-(2*$border), 2*$border+8);
+        //$height=max($height-(2*$border), 2*$border+8);
         
-        if ($angle !=0) {
             $tmpimage= imagecreatetruecolor(8000, 8000);
             $white = imagecolorallocate($tmpimage, 255, 255, 255);
             $black = imagecolorallocate($tmpimage, 0, 0, 0);
-            imagefilledrectangle($tmpimage, 0, 0, 7999, 7999, $white);
+            imagefilledrectangle($tmpimage, 0, 0, 7999, 7999, $black);
             $pol=array(
-                $this->x1,$this->y1,
-                $this->x2,$this->y2,
-                $this->x3,$this->y3,
-                $this->x4,$this->y4,
+                4000+$this->x1,4000+$this->y1,
+                4000+$this->x2,4000+$this->y2,
+                4000+$this->x3,4000+$this->y3,
+                4000+$this->x4,4000+$this->y4,
             );
-            imagefilledpolygon($tmpimage, $pol, 4, $black);
-            $tmpimage=imagerotate ( $tmpimage , 0- $angle ,  $white );
-            //echo "rotate angle: $angle\n";
-            $tmpimage=imagecropauto($tmpimage,IMG_CROP_THRESHOLD, $threshold=0.1, $white);
-            $horiz_width=max(imagesx($tmpimage)-(2*$border), 2*$border+8);
-            $horiz_height=max(imagesy($tmpimage)-(2*$border), 2*$border+8);
-            $txt_horiz_width=$horiz_width;
-            $txt_horiz_height=$horiz_height;
-            
-        }
-        
-        // }
-        
+            imagefilledpolygon($tmpimage, $pol, 4, $white);
+            if ((0- $this->text_angle) != 0)
+                $tmpimage=imagerotate( $tmpimage , 0- $this->text_angle ,  0 );
+            $tmpimage=imagecropauto($tmpimage,IMG_CROP_SIDES);
+            $width=max(imagesx($tmpimage)-(2*$border), 2*$border+8);
+            $height=max(imagesy($tmpimage)-(2*$border), 2*$border+8);
+                    
         if ($font_size <=6)
         $font_size=7;
         
         $dim["height"]  = $height;
         $dim["width"]  = $width;
         while (
-            ((( $dim["height"]  >= $height )||( $dim["width"]  >= $width )) && ($font_size > 6)) || 
-            ((isset($horiz_width) && $txt_horiz_width >= $horiz_width ) || (isset($horiz_height) && $txt_horiz_height >= $horiz_height ))) {
+            ((( $dim["height"]  >= $height )||( $dim["width"]  >= $width )) && ($font_size > 6)) ) {
                 $image_heigth=$height;
                 $image_width=$width;
                 $size=$font_size;
-                $angle=$angle;
                 $x=$border;
                 $y=$border;
                 
@@ -159,7 +150,7 @@ class TextBlock {
                 //for each word
                 for ($i=0; isset($arr[$i]);$i++){
                     //we calculate word dimensions
-                    $arr_stat=$this->calculateTextBox($size, $angle, $font, $arr[$i].'#');
+                    $arr_stat=$this->calculateTextBox($size, 0, $font, $arr[$i].'#');
                     
                     //if  word +current ligne length larger than line, we change line
                     if ($line_length +$arr_stat['width'] > $max_line_length){
@@ -174,12 +165,7 @@ class TextBlock {
                 }
                 
                 $text_res=implode("\n", $res);
-                $dim=($this->calculateTextBox($size, $angle, $font, $text_res));
-                if ($angle != 0){
-                    $tmp=($this->calculateTextBox($size, 0, $font, $text_res));
-                    $txt_horiz_width=$tmp['width'];
-                    $txt_horiz_height=$tmp['height'];
-                }
+                $dim=($this->calculateTextBox($size, 0, $font, $text_res));
                 
                 $image = imagecreatetruecolor($width, $height);
                 $white = imagecolorallocate($image, 255, 255, 255);
@@ -187,9 +173,8 @@ class TextBlock {
                 $black = imagecolorallocate($image, 0, 0, 0);
                 $color=$black;
                 imagefilledrectangle($image, 0, 0, $height-1, $width-1, $white);
-                imagettftext (  $image , $size , $angle , $x ,  $y ,  $black , $font ,  $text_res );
+                imagettftext (  $image , $size , 0 , $x ,  $y ,  $black , $font ,  $text_res );
                 
-                //imagejpeg($image,"test.jpg");
                 $resultat['font']=$font;
                 $resultat['text']=$text_res;
                 $resultat['size']=$size;
@@ -199,9 +184,7 @@ class TextBlock {
                 $resultat['height_px']=$dim['height'];
                 $font_size--;
             }
-            //echo "___________\n";
-            //echo "size: ".$resultat['size']."\n";
-            //echo "$text\n";
+
             return $resultat;
         }
         
@@ -301,6 +284,14 @@ class TextBlock {
 
     //Reorder pixel coordinates and fix angle
     private function reorder_points ($marge=3){
+        $this->ori['x1']=$this->x1;
+        $this->ori['y1']=$this->y1;
+        $this->ori['x2']=$this->x2;
+        $this->ori['y2']=$this->y2;
+        $this->ori['x3']=$this->x3;
+        $this->ori['y3']=$this->y3;
+        $this->ori['x4']=$this->x4;
+        $this->ori['y4']=$this->y4;
         $rotate=0;
         while (
                 ( $this->x1 >=  $this->x2 ) ||
@@ -311,7 +302,6 @@ class TextBlock {
                 ($this ->y2 -$marge> $this ->y1)
               ){
             $rotate++;
-            echo "rotate\n";
             $tmpx=$this->x1;
             $tmpy=$this->y1;
             $this->x1=$this->x2;
@@ -337,6 +327,7 @@ class TextBlock {
         // so we fill everythin wich is not text in white,
         // and then use autocrop
         $image = cloneImg($this->mother_image);
+        
         $white   = imagecolorallocate($image, 255, 255, 255);
         $image_width = imagesx($image);
         $image_height = imagesy($image);
