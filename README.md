@@ -15,7 +15,7 @@ I am not a developper, so this project code might be really ugly. :)
 ![Translated](images/0004-translated.jpg "Translated")
 
 ## Workflow summary
-* Open Jpeg image
+* Open image (jpeg, png, gif or bmp)
 * Detect textboxes
 * Detect font size
 * OCR Text in textboxes
@@ -28,9 +28,9 @@ I am not a developper, so this project code might be really ugly. :)
 * Support external denoiser (ie: Waifu2x) to improve OCR performance
 * Support tilted textboxes
 
-## Known Limitations
-* Only work with jpeg files for now.
-* Support for tilted textboxes can be improved
+## Known Issues
+* Let me know
+
 ## Installation
 
 create a composer.json file in your project, and add:
@@ -39,7 +39,7 @@ create a composer.json file in your project, and add:
 {
     "minimum-stability": "dev",
     "require": {
-         "hcharbonnier/mangatranslation": ">=0.0.1"
+         "hcharbonnier/mangatranslation": ">=0.2.0"
     }
 }
 ```
@@ -63,6 +63,8 @@ use mangatranslation\MangaImage;
 use mangatranslation\TextBlock;
 
 $test = new MangaImage($argv[1],$argv[2] );
+
+//Optional
 $test->external_denoiser (
     'cmd.exe /mnt/c/Users/Hugues/Downloads/waifu2x/waifu2x-converter-cpp.exe --force-OpenCL --model-dir \'C:\Users\Hugues\Downloads\waifu2x\models_rgb\' --scale-ratio 2 --noise-level 1 -m noise-scale -i _DENOISERINPUTFILE_ -o _DENOISEROUTPUTFILE_'
 );
