@@ -43,13 +43,14 @@ class MangaImage
     $this->response = $imageAnnotator->textDetection(file_get_contents($this->path));
     $this->annotation = $this->response->getFullTextAnnotation();
     $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
-    //$this->draw_boxes2(cloneImg($this->image));
-    $this->merge_similar_bloc($this->textbox_merge_tolerance);
+    $this->draw_boxes2(cloneImg($this->image));
+    $this->merge_similar_bloc_y($this->textbox_merge_tolerance);
+    $this->merge_similar_bloc_x($this->textbox_merge_tolerance);
     $i=0;
     foreach ($this->text_blocks as $text_block) {
       $text_block->load();
     }
-    //$this->draw_boxes2(cloneImg($this->image),1,1);
+    $this->draw_boxes2(cloneImg($this->image),1,1);
     $this->clean_image();
     $this->insert_translations();
     imagewrite($this->final_image,$this->output_file); 
@@ -194,7 +195,7 @@ class MangaImage
     }
   }
   
-  function merge_similar_bloc($tolerance=20){
+  function merge_similar_bloc_y($tolerance=20){
     
     for ($i=0;isset($this->text_blocks[$i]); $i++){
       for ($j=$i+1; isset($this->text_blocks[$j]);$j++) {
@@ -236,6 +237,68 @@ class MangaImage
           $this->text_blocks[$i]->x4=(min($jx4,$ix4));
           $this->text_blocks[$i]->y4=$jy4;
           
+          unset($this->text_blocks[$j]);
+          $this->text_blocks = array_values($this->text_blocks);
+          $j--;
+        }
+      }
+    }
+  }
+  function merge_similar_bloc_x($tolerance=20){
+    
+    for ($i=(count($this->text_blocks)-1);$i>=0; $i--){
+      for ($j=$i-1; $j>=0;$j--) {
+        $ix1=$this->text_blocks[$i]->x1;
+        $iy1=$this->text_blocks[$i]->y1;
+        $ix2=$this->text_blocks[$i]->x2;
+        $iy2=$this->text_blocks[$i]->y2;
+        $ix3=$this->text_blocks[$i]->x3;
+        $iy3=$this->text_blocks[$i]->y3;
+        $ix4=$this->text_blocks[$i]->x4;
+        $iy4=$this->text_blocks[$i]->y4;
+        $iavgx_bottom=($ix4+$ix3)/2;
+        $iavgy_bottom=($iy4+$iy3)/2;
+        $iavgx_top=($ix1+$ix2)/2;
+        $iavgy_top=($iy1+$iy2)/2;   
+        $iavgx_right=($ix2+$ix3)/2;
+        $jx1=$this->text_blocks[$j]->x1;
+        $jy1=$this->text_blocks[$j]->y1;
+        $jx2=$this->text_blocks[$j]->x2;
+        $jy2=$this->text_blocks[$j]->y2;
+        $jx3=$this->text_blocks[$j]->x3;
+        $jy3=$this->text_blocks[$j]->y3;
+        $jx4=$this->text_blocks[$j]->x4;
+        $jy4=$this->text_blocks[$j]->y4;
+        $javgx_bottom=($jx4+$jx3)/2;
+        $javgy_bottom=($jy4+$jy3)/2;
+        $javgx_top=($jx1+$jx2)/2;
+        $javgy_top=($jy1+$jy2)/2;
+        $javgx_left=($jx1+$jx4)/2;   
+              
+        
+        $block_distance_x=$javgx_left-$iavgx_right;
+        echo "_____________\nblock:$i-$j\njavgx_left:$javgx_left\niavgx_right:$iavgx_right\n;\nblock_distance_x:$block_distance_x\ntolerance:$$tolerance\niy2:$iy2\n jx1:$jx1\n jy1:$jy1\niy3:$iy3\njy4:$jy4\n";
+        if ((($block_distance_x < $tolerance) && ($block_distance_x >0)) &&
+              (
+                (($iy2 -$tolerance < $jy1) && ($iy3+$tolerance > $jy4)) ||
+                (($iy2 +$tolerance> $jy1) && ($iy3 -$tolerance < $jy4))
+              )
+            )
+        {
+          // both x and y says it is the same block
+          $this->text_blocks[$i]->x1=$ix1;
+          $this->text_blocks[$i]->iy1=min($iy1,$jy1);
+          $this->text_blocks[$i]->x2=$jx2;
+          $this->text_blocks[$i]->y2=(min($jy2,$iy2));
+          $this->text_blocks[$i]->x3=$jx3;
+          $this->text_blocks[$i]->y3=(max($jy3,$iy3));;
+          $this->text_blocks[$i]->x4=$ix4;
+          $this->text_blocks[$i]->y4=(max($jy4,$iy4));;
+          
+
+          echo "X3:\n";
+          echo 'x:'.$this->text_blocks[$i]->x3."\n";
+          echo 'y:'.$this->text_blocks[$i]->y3."\n";
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
           $j--;

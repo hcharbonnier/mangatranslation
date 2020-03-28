@@ -54,6 +54,7 @@ class TextBlock {
         $this->mother_image = cloneImg($motherimage);
         
         $this->mother_name= $mother_name;
+        $this->reorder_points();
     }
     
     function load() {
@@ -65,7 +66,7 @@ class TextBlock {
         $y3=$this->y3;
         $x4=$this->x4;
         $y4=$this->y4;
-        $this->text_angle = round($this->pixels_angle2(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
+        $this->text_angle= round($this->pixels_angle2(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
         $this->reorder_points();
         $this->extract_bloc();
         $this->dominant_color_alt();
@@ -288,14 +289,17 @@ class TextBlock {
 
     //Reorder pixel coordinates and fix angle
     private function reorder_points ($marge=3){
-        $this->ori['x1']=$this->x1;
-        $this->ori['y1']=$this->y1;
-        $this->ori['x2']=$this->x2;
-        $this->ori['y2']=$this->y2;
-        $this->ori['x3']=$this->x3;
-        $this->ori['y3']=$this->y3;
-        $this->ori['x4']=$this->x4;
-        $this->ori['y4']=$this->y4;
+        if (! isset($this->ori['x1'])){
+            $this->ori['x1']=$this->x1;
+            $this->ori['y1']=$this->y1;
+            $this->ori['x2']=$this->x2;
+            $this->ori['y2']=$this->y2;
+            $this->ori['x3']=$this->x3;
+            $this->ori['y3']=$this->y3;
+            $this->ori['x4']=$this->x4;
+            $this->ori['y4']=$this->y4;
+        }
+        
         $rotate=0;
         while (
                 ( $this->x1 >=  $this->x2 ) ||
