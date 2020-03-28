@@ -440,7 +440,7 @@ class TextBlock {
       }
     
     function expand_block_text($color_tolerance=50,$offset=5){
-        //known bug: To bloc can expand over eachother
+        //known bug: 2 blocs can expand over eachother
         $background=$this->background_color_alt;
         $x1=$this->x1 - $offset;
         $y1=$this->y1 - $offset;
@@ -475,7 +475,7 @@ class TextBlock {
         }else {$dobottom=false;}
         
         //We expand each block side 1px per 1 px, so  we keep the original textbolck center
-        while ($doleft && $dotop && $doright && $dobottom) {
+        while ($doleft && $doright) {
             //doleft
             $x=$x1-1;
             for ($y=$y4; ($y >= $y1) && $doleft; $y-- ){
@@ -488,13 +488,35 @@ class TextBlock {
                     {
                         $doleft =false;
                     }
+            }
+            if ($doleft ){
+                $x1=$x;
+                $x4=$x;
+                $this->x1=$x;
+                $this->x4=$x;
+            }
+            //doright
+            $x=$x2+1;
+            for ($y=$y2; ($y <= $y3) && $doright; $y++ ){
+                $rgb=imagecolorat($image,$x,$y);
+                $colors=imagecolorsforindex($image,$rgb);
+                if ( 
+                    (abs($colors['red'] - $background[0]) >$color_tolerance) ||
+                    (abs($colors['green'] - $background[1]) >$color_tolerance) ||
+                    (abs($colors['blue'] - $background[2]) >$color_tolerance))
+                    {
+                        $doright =false;
+                    }
                 }
-                if ($doleft ){
-                    $x1=$x;
-                    $x4=$x;
-                    $this->x1=$x;
-                    $this->x4=$x;
+                if ($doright ){
+                    $x2=$x;
+                    $x3=$x;
+                    $this->x2=$x;
+                    $this->x3=$x;
                 }
+            }
+
+            while ($dotop && $dobottom) {
                 //dotop
                 $y=$y1-1;
                 for ($x=$x1; ($x <= $x2) && $dotop; $x++ ){
@@ -508,52 +530,33 @@ class TextBlock {
                             $dotop =false;
                         }
                     }
-                    if ($dotop ){
-                        $y1=$y;
-                        $y2=$y;
-                        $this->y1=$y;
-                        $this->y2=$y;
-                    }
-                    //doright
-                    $x=$x2+1;
-                    for ($y=$y2; ($y <= $y3) && $doright; $y++ ){
-                        $rgb=imagecolorat($image,$x,$y);
-                        $colors=imagecolorsforindex($image,$rgb);
-                        if ( 
-                            (abs($colors['red'] - $background[0]) >$color_tolerance) ||
-                            (abs($colors['green'] - $background[1]) >$color_tolerance) ||
-                            (abs($colors['blue'] - $background[2]) >$color_tolerance))
-                            {
-                                $doright =false;
-                            }
-                        }
-                        if ($doright ){
-                            $x2=$x;
-                            $x3=$x;
-                            $this->x2=$x;
-                            $this->x3=$x;
-                        }
-                        
-                        //dobottom
-                        $y=$y3+1;
-                        for ($x=$x3; ($x >= $x4) && $dobottom; $x-- ){
-                            $rgb=imagecolorat($image,$x,$y);
-                            $colors=imagecolorsforindex($image,$rgb);
-                            if ( 
-                                (abs($colors['red'] - $background[0]) >$color_tolerance) ||
-                                (abs($colors['green'] - $background[1]) >$color_tolerance) ||
-                                (abs($colors['blue'] - $background[2]) >$color_tolerance))
-                                {
-                                    $dobottom =false;
-                                }
-                            }
-                            if ($dobottom ){
-                                $y3=$y;
-                                $y4=$y;
-                                $this->y3=$y;
-                                $this->y4=$y;
-                            }
-                        }
-                    }
+                if ($dotop ){
+                    $y1=$y;
+                    $y2=$y;
+                    $this->y1=$y;
+                    $this->y2=$y;
                 }
+                            
+                //dobottom
+                $y=$y3+1;
+                for ($x=$x3; ($x >= $x4) && $dobottom; $x-- ){
+                    $rgb=imagecolorat($image,$x,$y);
+                    $colors=imagecolorsforindex($image,$rgb);
+                    if ( 
+                        (abs($colors['red'] - $background[0]) >$color_tolerance) ||
+                        (abs($colors['green'] - $background[1]) >$color_tolerance) ||
+                        (abs($colors['blue'] - $background[2]) >$color_tolerance))
+                        {
+                            $dobottom =false;
+                        }
+                }
+                if ($dobottom ){
+                    $y3=$y;
+                    $y4=$y;
+                    $this->y3=$y;
+                    $this->y4=$y;
+                }
+            }
+        }
+    }
                 
