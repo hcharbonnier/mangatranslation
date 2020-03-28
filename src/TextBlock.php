@@ -73,7 +73,7 @@ class TextBlock {
         $this->expand_block_text();
         $this->find_font_size();
         $this->font_size=$this->original_font_size;        
-        $this->translated_text=$this->translate_string($this->ocr_text, "fr");
+        $this->translated_text=$this->translate_string($this->ocr_text, "en");
         $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
         $this->translation_width = $formatted_text['width_px'];
         $this->translation_height = $formatted_text['height_px'];
