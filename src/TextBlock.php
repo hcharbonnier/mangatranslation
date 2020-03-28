@@ -25,6 +25,7 @@ class TextBlock {
     public $x4;
     public $y4;
     public $ori=array();
+    public $ordered=array();
     //    public $background_color;
     public $background_color_alt;
     public $ocr_text;
@@ -50,11 +51,10 @@ class TextBlock {
         $this->y3 = $y3;
         $this->x4 = $x4;
         $this->y4 = $y4;
-        
         $this->mother_image = cloneImg($motherimage);
-        
+
         $this->mother_name= $mother_name;
-        $this->reorder_points();
+        $this->ordered=$this->getordered_points();
     }
     
     function load() {
@@ -327,6 +327,39 @@ class TextBlock {
             $this->text_angle=2*90+$this->text_angle;;
         if ($rotate ==3)
             $this->text_angle=3*90+(90-$this->text_angle);  
+    }
+
+    //Reorder pixel coordinates and fix angle
+    private function getordered_points ($marge=3){
+            $x1=$this->x1;
+            $y1=$this->y1;
+            $x2=$this->x2;
+            $y2=$this->y2;
+            $x3=$this->x3;
+            $y3=$this->y3;
+            $x4=$this->x4;
+            $y4=$this->y4;
+
+                while (
+                ( $x1 >=  $x2 ) ||
+                ( $y2 >= $y3) ||
+                ($x3 <= $x4) ||
+                ($y4 <= $y1)  ||
+                ($x4 +$marge< $x1) ||
+                ($y2 -$marge> $y1)
+              ){
+            $tmpx=$x1;
+            $tmpy=$y1;
+            $x1=$x2;
+            $y1=$y2;
+            $x2=$x3;
+            $y2=$y3;
+            $x3=$x4;
+            $y3=$y4;
+            $x4=$tmpx;
+            $y4=$tmpy;
+        }
+        return array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
     }
     
     //Extract bloc textimage from manga image
