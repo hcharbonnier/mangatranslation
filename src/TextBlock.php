@@ -114,18 +114,19 @@ class TextBlock {
             $tmpimage=imagecreatetruecolor($imgx, $imgy);
             $white = imagecolorallocate($tmpimage, 255, 255, 255);
             $black = imagecolorallocate($tmpimage, 0, 0, 0);
-
             imagefilledrectangle($tmpimage, 0, 0, $imgx-1, $imgy-1, $black);
+
             $pol=array(
                 $this->x1,$this->y1,
                 $this->x2,$this->y2,
                 $this->x3,$this->y3,
                 $this->x4,$this->y4,
             );
+
             imagefilledpolygon($tmpimage, $pol, 4, $white);
             if ($this->text_angle != 0)
                 $tmpimage=imagerotate( $tmpimage , 0- $this->text_angle ,  0 );
-
+                
             $tmpimage=imagecropauto($tmpimage,IMG_CROP_SIDES);
             $width=max(imagesx($tmpimage)-(2*$border), 2*$border+8);
             $height=max(imagesy($tmpimage)-(2*$border), 2*$border+8);

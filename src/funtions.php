@@ -60,4 +60,21 @@ function cloneImg($img){
     return $copy;
 
   }
+
+  // Calculating distance 
+  function distance($x1, $y1, $x2, $y2) 
+    { 
+    return sqrt(pow($x2 - $x1, 2) +  
+                pow($y2 - $y1, 2) * 1.0); 
+    } 
+
+    //Rotate xm,ym point with $angle, arround $xo,$yo
+    function rotate ($xm,$ym, $xo,$yo, $angle) {
+        $angle =$angle* pi() / 180;
+        $xm = $xm - $xo;
+        $ym = $ym - $yo;
+        $x = $xm * cos ($angle) + $ym * sin ($angle) + $xo;
+        $y = -$xm * sin ($angle) + $ym * cos ($angle) + $yo;
+        return (array(round($x),round($y)));
+      }
 ?>

@@ -255,13 +255,13 @@ class MangaImage
       $translation_width=$block->translation_width;
       $translation_height=$block->translation_height;
 
-      $block_height=round($this->distance($block->ori['x4'],$block->ori['y4'],$block->ori['x1'],$block->ori['y1']));
-      $block_width=round($this->distance($block->ori['x1'],$block->ori['y1'],$block->ori['x2'],$block->ori['y2']));
+      $block_height=round(distance($block->ori['x4'],$block->ori['y4'],$block->ori['x1'],$block->ori['y1']));
+      $block_width=round(distance($block->ori['x1'],$block->ori['y1'],$block->ori['x2'],$block->ori['y2']));
 
       $Ix=$block->ori['x1']+($block_width-$translation_width)/2;
       $Iy=$block->ori['y1']+$block->translation_top_offset+($block_height-$translation_height)/2 ;
 
-      $insert=$this->rotate($Ix,$Iy,$block->ori['x1'],$block->ori['y1'],$block->text_angle);
+      $insert=rotate($Ix,$Iy,$block->ori['x1'],$block->ori['y1'],$block->text_angle);
 
       imagettftext (
         $this->final_image,
@@ -277,22 +277,8 @@ class MangaImage
       }
     }
 
-    //Rotate xm,ym point with $angle, arround $xo,$yo
-    function rotate ($xm,$ym, $xo,$yo, $angle) {
-      $angle =$angle* pi() / 180;
-      $xm = $xm - $xo;
-      $ym = $ym - $yo;
-      $x = $xm * cos ($angle) + $ym * sin ($angle) + $xo;
-      $y = -$xm * sin ($angle) + $ym * cos ($angle) + $yo;
-      return (array(round($x),round($y)));
-    }
+    
 
-    function distance($x1, $y1, $x2, $y2) 
-    { 
-      
-    // Calculating distance 
-    return sqrt(pow($x2 - $x1, 2) +  
-                pow($y2 - $y1, 2) * 1.0); 
-    } 
+    
   }
   
