@@ -73,7 +73,7 @@ class TextBlock {
         $this->expand_block_text();
         $this->find_font_size();
         $this->font_size=$this->original_font_size;        
-        $this->translated_text=$this->translate_string($this->ocr_text, "en");
+        $this->translated_text=$this->translate_string($this->ocr_text, "fr");
         $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
         $this->translation_width = $formatted_text['width_px'];
         $this->translation_height = $formatted_text['height_px'];
@@ -109,20 +109,23 @@ class TextBlock {
         
        // $width=max($width-(2*$border), 2*$border+8);
         //$height=max($height-(2*$border), 2*$border+8);
-        
-            $tmpimage= imagecreatetruecolor(8000, 8000);
+        $imgx=max(imagesx($this->mother_image),imagesy($this->mother_image));
+        $imgy=$imgx;
+            $tmpimage=imagecreatetruecolor($imgx, $imgy);
             $white = imagecolorallocate($tmpimage, 255, 255, 255);
             $black = imagecolorallocate($tmpimage, 0, 0, 0);
-            imagefilledrectangle($tmpimage, 0, 0, 7999, 7999, $black);
+
+            imagefilledrectangle($tmpimage, 0, 0, $imgx-1, $imgy-1, $black);
             $pol=array(
-                4000+$this->x1,4000+$this->y1,
-                4000+$this->x2,4000+$this->y2,
-                4000+$this->x3,4000+$this->y3,
-                4000+$this->x4,4000+$this->y4,
+                $this->x1,$this->y1,
+                $this->x2,$this->y2,
+                $this->x3,$this->y3,
+                $this->x4,$this->y4,
             );
             imagefilledpolygon($tmpimage, $pol, 4, $white);
-            if ((0- $this->text_angle) != 0)
+            if ($this->text_angle != 0)
                 $tmpimage=imagerotate( $tmpimage , 0- $this->text_angle ,  0 );
+
             $tmpimage=imagecropauto($tmpimage,IMG_CROP_SIDES);
             $width=max(imagesx($tmpimage)-(2*$border), 2*$border+8);
             $height=max(imagesy($tmpimage)-(2*$border), 2*$border+8);

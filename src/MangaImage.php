@@ -155,6 +155,23 @@ class MangaImage
     @imagejpeg($this->image_drawn,'dump/boxes'.basename($fileName).'-'.$offset.'-'.'.jpg');
   }
   
+  function draw_boxes_inimage ($image, $color=0, $offset=0) {
+    
+    $black = imagecolorallocate($image, 0, 0, 0);
+    $red = imagecolorallocate($image, 255, 0, 0);
+    
+    if ($color == 0 )
+    $linecolor=$black;
+    else
+    $linecolor=$red;
+    
+    foreach($this->text_blocks as $text_block) {
+      imageline ( $image ,  $text_block->x1 -$offset, $text_block->y1 -$offset, $text_block->x2 +$offset, $text_block->y2 -$offset, $linecolor);
+      imageline ( $image ,  $text_block->x2 +$offset, $text_block->y2 -$offset, $text_block->x3 +$offset , $text_block->y3+$offset , $linecolor);
+      imageline ( $image ,  $text_block->x3 +$offset, $text_block->y3+$offset , $text_block->x4 -$offset, $text_block->y4+$offset , $linecolor);
+      imageline ( $image ,  $text_block->x4 -$offset , $text_block->y4 +$offset, $text_block->x1 -$offset, $text_block->y1-$offset , $linecolor);
+    }
+  }
   // remove existing text in manga image
   function clean_image () {
     $this->cleaned_image = cloneImg($this->image);
@@ -237,23 +254,45 @@ class MangaImage
       
       $translation_width=$block->translation_width;
       $translation_height=$block->translation_height;
-      
-      $block_center_x=($block->ori['x1']+$block->ori['x2']+$block->ori['x3']+$block->ori['x4'])/4;
-      $block_center_y=($block->ori['y1']+$block->ori['y2']+$block->ori['y3']+$block->ori['y4'])/4;
-      
-      $insert_x=$block_center_x-($translation_width/2);
-      $insert_y=$block_center_y-($translation_height/2)+$block->translation_top_offset;
-      
+
+      $block_height=round($this->distance($block->ori['x4'],$block->ori['y4'],$block->ori['x1'],$block->ori['y1']));
+      $block_width=round($this->distance($block->ori['x1'],$block->ori['y1'],$block->ori['x2'],$block->ori['y2']));
+
+      $Ix=$block->ori['x1']+($block_width-$translation_width)/2;
+      $Iy=$block->ori['y1']+$block->translation_top_offset+($block_height-$translation_height)/2 ;
+
+      $insert=$this->rotate($Ix,$Iy,$block->ori['x1'],$block->ori['y1'],$block->text_angle);
+
       imagettftext (
         $this->final_image,
         $block->font_size,
         $block->text_angle,
-        $insert_x,
-        $insert_y,
+        //$insert_x,
+        //$insert_y,
+        $insert[0],
+        $insert[1],
         $black,
         $block->font,
         $block->formatted_text );
       }
     }
+
+    //Rotate xm,ym point with $angle, arround $xo,$yo
+    function rotate ($xm,$ym, $xo,$yo, $angle) {
+      $angle =$angle* pi() / 180;
+      $xm = $xm - $xo;
+      $ym = $ym - $yo;
+      $x = $xm * cos ($angle) + $ym * sin ($angle) + $xo;
+      $y = -$xm * sin ($angle) + $ym * cos ($angle) + $yo;
+      return (array(round($x),round($y)));
+    }
+
+    function distance($x1, $y1, $x2, $y2) 
+    { 
+      
+    // Calculating distance 
+    return sqrt(pow($x2 - $x1, 2) +  
+                pow($y2 - $y1, 2) * 1.0); 
+    } 
   }
   
