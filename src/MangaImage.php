@@ -27,35 +27,77 @@ class MangaImage
   private $response=null;
   private $annotation=null;
   private $denoiser=array("enable" => false);
-  public $output_file=null;
+  //public $output_file=null;
   
-  function __construct($path, $output_file) {
+  function __construct($path) {
     $this->path = $path;
-    $this->output_file=$output_file;
+    $this->image = imagecreatefromany($this->path);
   }
   
+
   function load(){
-    if ($this->denoiser['enable'])
-      $this->denoise();
-    $this->image = imagecreatefromany($this->path);
+   // if ($this->denoiser['enable'])
+   //   $this->denoise();
     # performs label detection on the image file
+    
+    //$this->draw_boxes2(cloneImg($this->image));
+    //$i=0;
+    //$this->draw_boxes2(cloneImg($this->image),1,1);
+    //$this->clean_image();
+    //$this->insert_translations();
+  }
+
+  public function detect_block(){
     $imageAnnotator = new ImageAnnotatorClient();
     $this->response = $imageAnnotator->textDetection(file_get_contents($this->path));
     $this->annotation = $this->response->getFullTextAnnotation();
     $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
-    //$this->draw_boxes2(cloneImg($this->image));
-    $this->merge_similar_bloc_y($this->textbox_merge_tolerance);
-    $this->merge_similar_bloc_x($this->textbox_merge_tolerance);
-    $i=0;
+  }
+  private function load_textblock(){
     foreach ($this->text_blocks as $text_block) {
-      $text_block->load();
+      $text_block->process();
     }
-    //$this->draw_boxes2(cloneImg($this->image),1,1);
-    $this->clean_image();
-    $this->insert_translations();
-    imagewrite($this->final_image,$this->output_file); 
   }
 
+  public function translate(){
+    foreach ($this->text_blocks as $text_block) {
+      $text_block->translate();
+    }
+  }
+
+  public function ocr(){
+    foreach ($this->text_blocks as $text_block) {
+      $text_block->ocr();
+    }
+  }
+
+  public function merge_near_block(){
+//    $this->draw_boxes2(cloneImg($this->image));
+    $this->merge_overriding_block($this->textbox_merge_tolerance);
+    $this->merge_similar_bloc_y($this->textbox_merge_tolerance);
+    $this->merge_similar_bloc_x($this->textbox_merge_tolerance);
+//    $this->draw_boxes2(cloneImg($this->image),1,1);
+  }
+
+  private function process_text_blocks(){
+    foreach ($this->text_blocks as $text_block) {
+      $text_block->process();
+    }
+  }
+
+  public function export($path,$quality=75){
+    imagewrite($this->final_image,$path,$quality);
+  }
+
+  public function get_block(){
+    $i=0;
+    foreach ($this->text_blocks as $text_block) {
+      $res[$i]= $text_block->get_block();
+      $i++;
+    }
+    return $res;
+
+  }
   private function denoise(){
     //@mkdir(sys_get_temp_dir()."/mangatranslation");
     //$output_file=sys_get_temp_dir()."/mangatranslation".basename($this->path);
@@ -174,7 +216,7 @@ class MangaImage
     }
   }
   // remove existing text in manga image
-  function clean_image () {
+  function clean_raw() {
     $this->cleaned_image = cloneImg($this->image);
     foreach ($this->text_blocks as $block) {
       $x1=$block->x1;
@@ -244,31 +286,143 @@ class MangaImage
       }
     }
   }
-  function merge_similar_bloc_x($tolerance=20){
+
+  function merge_overriding_block($tolerance=2){
     
+    for ($i=0;isset($this->text_blocks[$i]); $i++){
+      for ($j=$i+1; isset($this->text_blocks[$j]);$j++) {
+        $ix1=$this->text_blocks[$i]->x1;
+        $iy1=$this->text_blocks[$i]->y1;
+        $ix2=$this->text_blocks[$i]->x2;
+        $iy2=$this->text_blocks[$i]->y2;
+        $ix3=$this->text_blocks[$i]->x3;
+        $iy3=$this->text_blocks[$i]->y3;
+        $ix4=$this->text_blocks[$i]->x4;
+        $iy4=$this->text_blocks[$i]->y4;
+        $iavgx_bottom=($ix4+$ix3)/2;
+        $iavgy_bottom=($iy4+$iy3)/2;
+        $iavgx_top=($ix1+$ix2)/2;
+        $iavgy_top=($iy1+$iy2)/2;   
+        $jx1=$this->text_blocks[$j]->x1;
+        $jy1=$this->text_blocks[$j]->y1;
+        $jx2=$this->text_blocks[$j]->x2;
+        $jy2=$this->text_blocks[$j]->y2;
+        $jx3=$this->text_blocks[$j]->x3;
+        $jy3=$this->text_blocks[$j]->y3;
+        $jx4=$this->text_blocks[$j]->x4;
+        $jy4=$this->text_blocks[$j]->y4;
+        $javgx_bottom=($jx4+$jx3)/2;
+        $javgy_bottom=($jy4+$jy3)/2;
+        $javgx_top=($jx1+$jx2)/2;
+        $javgy_top=($jy1+$jy2)/2;             
+
+        
+        $block_distance_y=$javgy_top-$iavgy_bottom;
+        if ((($jx1 +$tolerance >$ix4) && ($jx1 <$ix3+$tolerance) && ($jy1+$tolerance > $iy1) && ($jy1 < $iy4+$tolerance)) ||
+            (($jx2 +$tolerance >$ix4) && ($jx2 <$ix3+$tolerance) && ($jy2+$tolerance > $iy1) && ($jy2 < $iy4+$tolerance)) ||
+            (($ix1 +$tolerance >$jx4) && ($ix1 <$jx3+$tolerance) && ($iy1+$tolerance > $jy1) && ($iy1 < $jy4+$tolerance)) ||
+            (($ix2 +$tolerance >$jx4) && ($ix2 <$jx3+$tolerance) && ($iy2+$tolerance > $jy1) && ($iy2 < $jy4+$tolerance))
+           )
+        {
+          // both x and y says it is the same block
+          $this->text_blocks[$i]->x1=(min($jx1,$ix1));
+          $this->text_blocks[$i]->iy1=$iy1;
+          $this->text_blocks[$i]->x2=(max($jx2,$ix2));
+          $this->text_blocks[$i]->y2=$iy2;
+          $this->text_blocks[$i]->x3=(max($jx3,$ix3));
+          $this->text_blocks[$i]->y3=$jy3;
+          $this->text_blocks[$i]->x4=(min($jx4,$ix4));
+          $this->text_blocks[$i]->y4=$jy4;
+          unset($this->text_blocks[$j]);
+          $this->text_blocks = array_values($this->text_blocks);
+          $j--;
+        }
+      }
+    }
+  }
+
+  function merge_similar_bloc_x($tolerance=20){
     for ($i=(count($this->text_blocks)-1);$i>=0; $i--){
       for ($j=$i-1; $j>=0;$j--) {
-        $ix1=$this->text_blocks[$i]->ordered[0];
-        $iy1=$this->text_blocks[$i]->ordered[1];
-        $ix2=$this->text_blocks[$i]->ordered[2];
-        $iy2=$this->text_blocks[$i]->ordered[3];
-        $ix3=$this->text_blocks[$i]->ordered[4];
-        $iy3=$this->text_blocks[$i]->ordered[5];
-        $ix4=$this->text_blocks[$i]->ordered[6];
-        $iy4=$this->text_blocks[$i]->ordered[7];
+        $ix1=$this->text_blocks[$i]->ordered['x1'];
+        $iy1=$this->text_blocks[$i]->ordered['y1'];
+        $ix2=$this->text_blocks[$i]->ordered['x2'];
+        $iy2=$this->text_blocks[$i]->ordered['y2'];
+        $ix3=$this->text_blocks[$i]->ordered['x3'];
+        $iy3=$this->text_blocks[$i]->ordered['y3'];
+        $ix4=$this->text_blocks[$i]->ordered['x4'];
+        $iy4=$this->text_blocks[$i]->ordered['y4'];
         $iavgx_bottom=($ix4+$ix3)/2;
         $iavgy_bottom=($iy4+$iy3)/2;
         $iavgx_top=($ix1+$ix2)/2;
         $iavgy_top=($iy1+$iy2)/2;   
         $iavgx_right=($ix2+$ix3)/2;
-        $jx1=$this->text_blocks[$j]->ordered[0];
-        $jy1=$this->text_blocks[$j]->ordered[1];
-        $jx2=$this->text_blocks[$j]->ordered[2];
-        $jy2=$this->text_blocks[$j]->ordered[3];
-        $jx3=$this->text_blocks[$j]->ordered[4];
-        $jy3=$this->text_blocks[$j]->ordered[5];
-        $jx4=$this->text_blocks[$j]->ordered[6];
-        $jy4=$this->text_blocks[$j]->ordered[7];
+        $jx1=$this->text_blocks[$j]->ordered['x1'];
+        $jy1=$this->text_blocks[$j]->ordered['y1'];
+        $jx2=$this->text_blocks[$j]->ordered['x2'];
+        $jy2=$this->text_blocks[$j]->ordered['y2'];
+        $jx3=$this->text_blocks[$j]->ordered['x3'];
+        $jy3=$this->text_blocks[$j]->ordered['y3'];
+        $jx4=$this->text_blocks[$j]->ordered['x4'];
+        $jy4=$this->text_blocks[$j]->ordered['y4'];
+        $javgx_bottom=($jx4+$jx3)/2;
+        $javgy_bottom=($jy4+$jy3)/2;
+        $javgx_top=($jx1+$jx2)/2;
+        $javgy_top=($jy1+$jy2)/2;
+        $javgx_left=($jx1+$jx4)/2;   
+              
+        
+        $block_distance_x=$javgx_left-$iavgx_right;
+        if ((($block_distance_x < $tolerance) && ($block_distance_x >0)) &&
+              (
+                (($iy2 -$tolerance < $jy1) && ($iy3+$tolerance > $jy4)) ||
+                (($iy2 +$tolerance> $jy1) && ($iy3 -$tolerance < $jy4))
+              )
+            )
+        {
+          // both x and y says it is the same block
+          $this->text_blocks[$i]->x1=$ix1;
+          $this->text_blocks[$i]->y1=min($iy1,$jy1);
+          $this->text_blocks[$i]->x2=$jx2;
+          $this->text_blocks[$i]->y2=(min($jy2,$iy2));
+          $this->text_blocks[$i]->x3=$jx3;
+          $this->text_blocks[$i]->y3=(max($jy3,$iy3));;
+          $this->text_blocks[$i]->x4=$ix4;
+          $this->text_blocks[$i]->y4=(max($jy4,$iy4));;
+          
+          unset($this->text_blocks[$j]);
+          $this->text_blocks = array_values($this->text_blocks);
+          $j--;
+        }
+      }
+    }
+  }
+
+  function merge_similar_bloc_x_test($tolerance=20){
+    
+    for ($i=(count($this->text_blocks)-1);$i>=0; $i--){
+      for ($j=$i-1; $j>=0;$j--) {
+        $ix1=$this->text_blocks[$i]->x1;
+        $iy1=$this->text_blocks[$i]->y1;
+        $ix2=$this->text_blocks[$i]->x2;
+        $iy2=$this->text_blocks[$i]->y2;
+        $ix3=$this->text_blocks[$i]->x3;
+        $iy3=$this->text_blocks[$i]->y3;
+        $ix4=$this->text_blocks[$i]->x4;
+        $iy4=$this->text_blocks[$i]->y4;
+        $iavgx_bottom=($ix4+$ix3)/2;
+        $iavgy_bottom=($iy4+$iy3)/2;
+        $iavgx_top=($ix1+$ix2)/2;
+        $iavgy_top=($iy1+$iy2)/2;   
+        $iavgx_right=($ix2+$ix3)/2;
+        $jx1=$this->text_blocks[$j]->x1;
+        $jy1=$this->text_blocks[$j]->y1;
+        $jx2=$this->text_blocks[$j]->x2;
+        $jy2=$this->text_blocks[$j]->y2;
+        $jx3=$this->text_blocks[$j]->x3;
+        $jy3=$this->text_blocks[$j]->y3;
+        $jx4=$this->text_blocks[$j]->x4;
+        $jy4=$this->text_blocks[$j]->y4;
         $javgx_bottom=($jx4+$jx3)/2;
         $javgy_bottom=($jy4+$jy3)/2;
         $javgx_top=($jx1+$jx2)/2;
@@ -303,7 +457,7 @@ class MangaImage
   }
   
   //write translated text over cleaned image
-  function insert_translations() {
+  function write_translation() {
     $this->final_image = cloneImg($this->cleaned_image);
     foreach ($this->text_blocks as $block) {
       $black = imagecolorallocate($this->final_image, 0, 0, 0);
@@ -313,13 +467,13 @@ class MangaImage
       $translation_width=$block->translation_width;
       $translation_height=$block->translation_height;
 
-      $block_height=round(distance($block->ori['x4'],$block->ori['y4'],$block->ori['x1'],$block->ori['y1']));
-      $block_width=round(distance($block->ori['x1'],$block->ori['y1'],$block->ori['x2'],$block->ori['y2']));
+      $block_height=round(distance($block->x4,$block->y4,$block->x1,$block->y1));
+      $block_width=round(distance($block->x1,$block->y1,$block->x2,$block->y2));
 
-      $Ix=$block->ori['x1']+($block_width-$translation_width)/2;
-      $Iy=$block->ori['y1']+$block->translation_top_offset+($block_height-$translation_height)/2 ;
+      $Ix=$block->x1+($block_width-$translation_width)/2;
+      $Iy=$block->y1+$block->translation_top_offset+($block_height-$translation_height)/2 ;
 
-      $insert=rotate($Ix,$Iy,$block->ori['x1'],$block->ori['y1'],$block->text_angle);
+      $insert=rotate($Ix,$Iy,$block->x1,$block->y1,$block->text_angle);
 
       imagettftext (
         $this->final_image,

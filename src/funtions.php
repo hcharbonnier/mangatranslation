@@ -29,19 +29,19 @@ function imagecreatefromany($filepath) {
 
 
 
-function imagewrite($image,$filepath) {
+function imagewrite($image,$filepath,$quality) {
     $tmp=explode('.',$filepath);
     $extension=end($tmp);
 
     switch ($extension) {
         case 'jpg' :
-            imagejpeg($image,$filepath);
+            imagejpeg($image,$filepath,$quality);
         break;
         case 'gif' :
             imagegif($image,$filepath);
         break;
         case 'png' :
-            imagepng($image,$filepath);
+            imagepng($image,$filepath,$quality);
         break;
         case 'bmp' :
             imagebmp($image,$filepath);
@@ -77,4 +77,5 @@ function cloneImg($img){
         $y = -$xm * sin ($angle) + $ym * cos ($angle) + $yo;
         return (array(round($x),round($y)));
       }
+
 ?>

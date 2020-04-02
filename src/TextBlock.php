@@ -24,7 +24,7 @@ class TextBlock {
     public $y3;
     public $x4;
     public $y4;
-    public $ori=array();
+//    public $ori=array();
     public $ordered=array();
     //    public $background_color;
     public $background_color_alt;
@@ -52,30 +52,39 @@ class TextBlock {
         $this->x4 = $x4;
         $this->y4 = $y4;
         $this->mother_image = cloneImg($motherimage);
-
         $this->mother_name= $mother_name;
-        $this->ordered=$this->getordered_points();
-    }
-    
-    function load() {
-        $x1=$this->x1;
-        $y1=$this->y1;
-        $x2=$this->x2;
-        $y2=$this->y2;
-        $x3=$this->x3;
-        $y3=$this->y3;
-        $x4=$this->x4;
-        $y4=$this->y4;
-        $this->text_angle= round($this->pixels_angle2(($x1+$x4)/2, ($y1+$y4)/2,($x2+$x3)/2, ($y2+$y3)/2));
+        $this->text_angle= round($this->pixels_angle2(($this->x1+$this->x4)/2, ($this->y1+$this->y4)/2,($this->x2+$this->x3)/2, ($this->y2+$this->y3)/2));
         $this->reorder_points();
+        //$this->process();
+    }
+
+    public function process(){
+        //$this->ordered=$this->getordered_points();
+        //Calculate text angle
+
         $this->extract_bloc();
         $this->dominant_color_alt();
-        $this->detect_text();
         $this->expand_block_text();
+/*        echo "____________";
+        print_r($this->ordered);
+        echo "x1:".$this->x1."\n"."y1:".$this->y1."\n"."x2:".$this->x2."\n"."y2:".$this->y2."\n"."x3:".$this->x3."\n"."y3:".$this->y3."\n"."x4:".$this->x4."\n"."y4:".$this->y4."\n";
+*/
+    }
+
+    public function ocr(){
+        $this->process();
+        $this->detect_text();
         $this->find_font_size();
-        $this->font_size=$this->original_font_size;        
+        $this->font_size=$this->original_font_size;
+    }
+
+    public function translate(){
+        //Translate string
         $this->translated_text=$this->translate_string($this->ocr_text, "en");
+
+        //Get best format for translated string (size fonts, etc..)
         $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
+
         $this->translation_width = $formatted_text['width_px'];
         $this->translation_height = $formatted_text['height_px'];
         $this->translation_top_offset= $formatted_text['top'];
@@ -83,8 +92,20 @@ class TextBlock {
         $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
         $this->font_size=$formatted_text['size'];
     }
-        
-    function translate_string ($text,$targetLanguage){
+     
+    public function get_block(){
+        $res['x1']=$this->x1;
+        $res['y1']=$this->y1;
+        $res['x2']=$this->x2;
+        $res['y2']=$this->y2;
+        $res['x3']=$this->x3;
+        $res['y3']=$this->y3;
+        $res['x4']=$this->x4;
+        $res['y4']=$this->y4;
+        return $res;
+    }
+
+    private function translate_string ($text,$targetLanguage="en"){
   
         $translate = new TranslateClient();
         $result = $translate->translate($text, [
@@ -289,38 +310,46 @@ class TextBlock {
 
     //Reorder pixel coordinates and fix angle
     private function reorder_points ($marge=3){
-        if (! isset($this->ori['x1'])){
-            $this->ori['x1']=$this->x1;
-            $this->ori['y1']=$this->y1;
-            $this->ori['x2']=$this->x2;
-            $this->ori['y2']=$this->y2;
-            $this->ori['x3']=$this->x3;
-            $this->ori['y3']=$this->y3;
-            $this->ori['x4']=$this->x4;
-            $this->ori['y4']=$this->y4;
-        }
-        
         $rotate=0;
+        $x1=$this->x1;
+        $y1=$this->y1;
+        $x2=$this->x2;
+        $y2=$this->y2;
+        $x3=$this->x3;
+        $y3=$this->y3;
+        $x4=$this->x4;
+        $y4=$this->y4;
+
         while (
-                ( $this->x1 >=  $this->x2 ) ||
-                ( $this ->y2 >= $this->y3) ||
-                ($this ->x3 <= $this ->x4) ||
-                ($this ->y4 <= $this ->y1)  ||
-                ($this ->x4 +$marge< $this ->x1) ||
-                ($this ->y2 -$marge> $this ->y1)
-              ){
+        ( $x1 >=  $x2 ) ||
+        ( $y2 >= $y3) ||
+        ($x3 <= $x4) ||
+        ($y4 <= $y1)  ||
+        ($x4 +$marge< $x1) ||
+        ($y2 -$marge> $y1)
+        ){
             $rotate++;
-            $tmpx=$this->x1;
-            $tmpy=$this->y1;
-            $this->x1=$this->x2;
-            $this->y1=$this->y2;
-            $this->x2=$this->x3;
-            $this->y2=$this->y3;
-            $this->x3=$this->x4;
-            $this->y3=$this->y4;
-            $this->x4=$tmpx;
-            $this->y4=$tmpy;
+            $tmpx=$x1;
+            $tmpy=$y1;
+            $x1=$x2;
+            $y1=$y2;
+            $x2=$x3;
+            $y2=$y3;
+            $x3=$x4;
+            $y3=$y4;
+            $x4=$tmpx;
+            $y4=$tmpy;
         }
+        $this->ordered = array(
+            'x1'=>$x1,
+            'y1'=>$y1,
+            'x2'=>$x2,
+            'y2'=>$y2,
+            'x3'=>$x3,
+            'y3'=>$y3,
+            'x4'=>$x4,
+            'y4'=>$y4
+        );
         if ($rotate ==1)
             $this->text_angle=2*90-$this->text_angle;
         if ($rotate ==2)
@@ -330,7 +359,7 @@ class TextBlock {
     }
 
     //Reorder pixel coordinates and fix angle
-    private function getordered_points ($marge=3){
+   /* private function getordered_points ($marge=3){
             $x1=$this->x1;
             $y1=$this->y1;
             $x2=$this->x2;
@@ -359,8 +388,8 @@ class TextBlock {
             $x4=$tmpx;
             $y4=$tmpy;
         }
-        return array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
-    }
+        $this->ordered=array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
+    }*/
     
     //Extract bloc textimage from manga image
     function extract_bloc() {
@@ -384,48 +413,48 @@ class TextBlock {
 
         // block width can't be < 4 pixels
         if (max($this->x2, $this->x3) - min($this->x1,$this->x4) < 4){
-            $this->x1-=1;
-            $this->x2+=1;
-            $this->x3+=1;
-            $this->x4-=1;
+            $this->ordered['x1']-=1;
+            $this->ordered['x2']+=1;
+            $this->ordered['x3']+=1;
+            $this->ordered['x4']-=1;
         }
 
         $pol1=array(
             0,0,
-            $this->x2,0,
-            $this->x2,$this->y2,
-            $this->x1,$this->y1,
+            $this->ordered['x2'],0,
+            $this->ordered['x2'],$this->ordered['y2'],
+            $this->ordered['x1'],$this->ordered['y1'],
             0,$this->y1
         );
         
         $pol2=array(
-            $this->x2,0,
-            $this->x2,$this->y2,
-            $this->x3,$this->y3,
-            $image_width, $this->y3,
+            $this->ordered['x2'],0,
+            $this->ordered['x2'],$this->ordered['y2'],
+            $this->ordered['x3'],$this->ordered['y3'],
+            $image_width, $this->ordered['y3'],
             $image_width, 0
         );
         $pol3=array(
             
-            $image_width,$this->y3,
-            $this->x3,$this->y3,
-            $this->x4,$this->y4,
-            $this->x4,$image_height,
+            $image_width,$this->ordered['y3'],
+            $this->ordered['x3'],$this->ordered['y3'],
+            $this->ordered['x4'],$this->ordered['y4'],
+            $this->ordered['x4'],$image_height,
             $image_width,$image_height
             
         );
         $pol4=array(
-            $this->x4,$image_height,
-            $this->x4,$this->y4,
-            $this->x1,$this->y1,
-            0,$this->y1,
+            $this->ordered['x4'],$image_height,
+            $this->ordered['x4'],$this->ordered['y4'],
+            $this->ordered['x1'],$this->ordered['y1'],
+            0,$this->ordered['y1'],
             0,$image_height
         );
 
         imagefilledpolygon($image, $pol1, 5, $white);
         imagefilledpolygon($image, $pol2, 5, $white);
         imagefilledpolygon($image, $pol3, 5, $white);
-        imagefilledpolygon($image, $pol4, 5, $white);
+        imagefilledpolygon($image, $pol4, 5, $white);        
         $this->image=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0.1, $white);
     }
 
