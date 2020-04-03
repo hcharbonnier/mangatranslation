@@ -27,9 +27,7 @@ function imagecreatefromany($filepath) {
     return $im; 
 }
 
-
-
-function imagewrite($image,$filepath,$quality) {
+function imagewrite($image,$filepath,$quality=100) {
     $tmp=explode('.',$filepath);
     $extension=end($tmp);
 
@@ -69,12 +67,29 @@ function cloneImg($img){
     } 
 
     //Rotate xm,ym point with $angle, arround $xo,$yo
-    function rotate ($xm,$ym, $xo,$yo, $angle) {
+    function rotate_ori ($xm,$ym, $xo,$yo, $angle) {
         $angle =$angle* pi() / 180;
         $xm = $xm - $xo;
         $ym = $ym - $yo;
         $x = $xm * cos ($angle) + $ym * sin ($angle) + $xo;
         $y = -$xm * sin ($angle) + $ym * cos ($angle) + $yo;
+        return (array(round($x),round($y)));
+      }
+
+      function rotate ($x1,$y1, $x_centre,$y_centre, $angle) {
+          if ($angle > 180)
+            $angle=0-(360-$angle);
+            
+        $angle =$angle* pi() / 180;
+        $cos_angle=cos($angle);
+        $sin_angle=sin($angle);
+
+        $distx=$x1-$x_centre;
+        $disty=$y1-$y_centre;
+        
+        $x=($distx * $cos_angle) - ($disty * $sin_angle) + $x_centre;
+        $y=($distx * $sin_angle) + ($disty * $cos_angle) + $y_centre;
+
         return (array(round($x),round($y)));
       }
 

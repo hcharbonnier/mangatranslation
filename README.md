@@ -54,6 +54,13 @@ composer install
 * bcmath
 * A google cloud platform project configured
  (https://cloud.google.com/dataproc/docs/guides/setup-project)
+
+## Dev additionnal requirements
+
+* php-7.4-xml
+* php-7.4-xmlrpc
+* php-7.4-mbstring
+
 ## Example
 ```php
 <?php
