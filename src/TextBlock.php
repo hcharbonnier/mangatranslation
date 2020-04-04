@@ -491,6 +491,8 @@ class TextBlock {
         imagefilledpolygon($image, $pol2, 5, $white);
         imagefilledpolygon($image, $pol3, 5, $white);
         imagefilledpolygon($image, $pol4, 5, $white);
+
+        $this->image=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0.1, $white);
     }
 
     //Calculate dimension of image generated from a string
