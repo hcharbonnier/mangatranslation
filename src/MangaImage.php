@@ -51,9 +51,9 @@ class MangaImage
     $imageAnnotator = new ImageAnnotatorClient();
     $this->response = $imageAnnotator->textDetection(file_get_contents($this->path));
     $this->annotation = $this->response->getFullTextAnnotation();
-    if ($this->annotation != null)
+    if ($this->annotation != null){
       $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
-
+    }
   }
 /*  private function load_textblock(){
     foreach ($this->text_blocks as $text_block) {
@@ -105,6 +105,12 @@ class MangaImage
   }
 
   public function add_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4){
+    if ( !(
+      (distance ($x1,$y1,$x2,$y2) <4) ||
+      (distance ($x2,$y2,$x3,$y3) <4) ||
+      (distance ($x3,$y3,$x4,$y4) <4) ||
+      (distance ($x4,$y4,$x1,$y1) <4) 
+    ))
     array_push($this->text_blocks , new TextBlock(basename($this->path),$this->image,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4));
   }
 
@@ -167,7 +173,6 @@ class MangaImage
   //Get document find bounds and stock them in this->text_blocks
   function get_document_bounds($annotation, $feature) {
     $bound = [];
-    print_r($annotation);
     foreach ($annotation->getPages() as $page) {
       if ($feature == FEATURE_PAGE){
         $coord=$this->bound_to_coord($page->getBoundingBox());

@@ -3,7 +3,7 @@ namespace mangatranslation;
 
 #require __DIR__ . '/vendor/autoload.php';
 
-require_once(__DIR__"/funtions.php");
+require_once(__DIR__."/funtions.php");
 # imports the Google Cloud client library
 use Google\Cloud\Vision\V1\ImageAnnotatorClient;
 use Google\Cloud\Translate\TranslateClient;
@@ -336,7 +336,6 @@ class TextBlock {
     //Reorder pixel coordinates and fix angle
     private function calculate_text_angle (){
         $angle=round($this->pixels_angle2(($this->x1+$this->x4)/2, ($this->y1+$this->y4)/2,($this->x2+$this->x3)/2, ($this->y2+$this->y3)/2));
-        
         $this->ori_point_to_reordered();
         $rotate=$this->nb_rotate;
         
@@ -349,11 +348,12 @@ class TextBlock {
         if ($rotate ==3)
             $this->text_angle=3*90+(90-$angle);
 
-        while ($this->text_angle >= 360)
-            $this->text_angle-=360;
+        while ($this->text_angle >= 360){
+            $this->text_angle-=360;}
         
-        while ($this->text_angle <= -360)
+        while ($this->text_angle <= -360){
             $this->text_angle+=360;
+        }
 
     }
 
@@ -367,7 +367,6 @@ class TextBlock {
         $y3=$this->y3;
         $x4=$this->x4;
         $y4=$this->y4;
-
         while (
             ( $x1 >=  $x2 ) ||
             ( $y2 >= $y3) ||
@@ -387,7 +386,7 @@ class TextBlock {
                 $y3=$y4;
                 $x4=$tmpx;
                 $y4=$tmpy;                
-        }
+            }
 
         $this->ordered = array(
             'x1'=>$x1,
