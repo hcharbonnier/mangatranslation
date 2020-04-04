@@ -257,8 +257,9 @@ class MangaImage
       imagefilledpolygon($this->cleaned_image,$polygon,4,$background);
 
       $red = imagecolorallocate($this->cleaned_image, 255,0,0);
-      $blue = imagecolorallocate($this->cleaned_image, 255,0,255);
+      $blue = imagecolorallocate($this->cleaned_image, 0,0,255);
       imagepolygon($this->cleaned_image,$polygon,4,$red);
+      imagefilledellipse($this->cleaned_image, $x1, $y1, 7, 7, $red);
       $polygon=array(
         $block->ordered['x1'],
         $block->ordered['y1'],
@@ -270,6 +271,8 @@ class MangaImage
         $block->ordered['y4'],
       );
       imagepolygon($this->cleaned_image,$polygon,4,$blue);
+      imagefilledellipse($this->cleaned_image, $block->ordered['x1'], $block->ordered['y1'], 7, 7, $blue);
+
     }
   }
 
@@ -328,6 +331,7 @@ class MangaImage
           $this->text_blocks[$i]->ordered['y3']=(max($jy3,$iy3));
           $this->text_blocks[$i]->ordered['x4']=(min($jx4,$ix4));
           $this->text_blocks[$i]->ordered['y4']=(max($jy4,$iy4));
+          $this->text_blocks[$i]->reorderpoint_to_ori();
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
           $j--;
@@ -346,6 +350,7 @@ class MangaImage
           $this->text_blocks[$i]->ordered['y3']=(max($jy3,$iy3));
           $this->text_blocks[$i]->ordered['x4']=(min($jx4,$ix4));
           $this->text_blocks[$i]->ordered['y4']=(max($jy4,$iy4));
+          $this->text_blocks[$i]->reorderpoint_to_ori();
           
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
@@ -373,6 +378,7 @@ class MangaImage
           $this->text_blocks[$i]->ordered['y3']=max($jy3,$iy3);
           $this->text_blocks[$i]->ordered['x4']=min($ix4,$jx4);
           $this->text_blocks[$i]->ordered['y4']=max($jy4,$iy4);
+          $this->text_blocks[$i]->reorderpoint_to_ori();
           
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
@@ -399,8 +405,8 @@ class MangaImage
 
 
       //A VERIFIER
-      $Ix=$block->x1+($block_width-$translation_width)/2;
-      $Iy=$block->y1+$block->translation_top_offset+($block_height-$translation_height)/2 ;
+      $Ix=$block->ordered['x1']+($block_width-$translation_width)/2;
+      $Iy=$block->ordered['y1']+$block->translation_top_offset+($block_height-$translation_height)/2 ;
 
       $insert=rotate($Ix,$Iy,$block->x1,$block->y1,$block->text_angle);
 

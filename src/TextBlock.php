@@ -26,6 +26,7 @@ class TextBlock {
     public $y4;
 //    public $ori=array();
     public $ordered=array();
+    public $nb_rotate=0;
     //    public $background_color;
     public $background_color_alt;
     public $ocr_text;
@@ -47,14 +48,18 @@ class TextBlock {
         $this->mother_image = cloneImg($motherimage);
         $this->mother_name= $mother_name;
         $this->set_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
+        $this->dominant_color_alt();
     }
 
     public function process(){
+        echo "  extract\n";
         $this->extract_bloc();
-        $this->dominant_color_alt();
+        echo "  dominantcolor\n";
         $this->draw_boxes2(2,0);
         $this->expand_block_text();
+        echo " expand\n";
         $this->draw_boxes2(3,0);
+        echo "expand_end\n";
     }
 
     public function ocr(){
@@ -62,7 +67,6 @@ class TextBlock {
         $this->detect_text();
         $this->find_font_size();
         $this->font_size=$this->original_font_size;
-
     }
 
     public function translate(){
@@ -107,8 +111,9 @@ class TextBlock {
         $this->y3 = $y3;
         $this->x4 = $x4;
         $this->y4 = $y4;
-        $this->text_angle= round($this->pixels_angle2(($this->x1+$this->x4)/2, ($this->y1+$this->y4)/2,($this->x2+$this->x3)/2, ($this->y2+$this->y3)/2));
-        $this->reorder_points();
+       // $this->text_angle= round($this->pixels_angle2(($this->x1+$this->x4)/2, ($this->y1+$this->y4)/2,($this->x2+$this->x3)/2, ($this->y2+$this->y3)/2));
+       // $this->ori_angle=$this->text_angle;
+        $this->calculate_text_angle();
     }
 
     private function translate_string ($text,$targetLanguage="en"){
@@ -223,12 +228,8 @@ class TextBlock {
         {
             ob_start(); // start a new output buffer
             imagejpeg($this->image,NULL,100);
-            imagewrite($this->image, "test.jpg");
             $image = ob_get_contents();
             ob_end_clean(); // stop this output buffer
-            file_put_contents("test2.jpg", $image, FILE_APPEND | LOCK_EX);
-
-
             $resultats=array();
             $j=0;
             $imageAnnotator = new ImageAnnotatorClient();
@@ -242,27 +243,27 @@ class TextBlock {
                     $string=$text->getDescription();
                     foreach ($text->getBoundingPoly()->getVertices() as $vertex) {
                         $x=$vertex->getX();
-                    break;
+                        break;
+                    }
+                    $resultats[$j][0]=$x;
+                    $resultats[$j][1]=$string;
                 }
-                $resultats[$j][0]=$x;
-                $resultats[$j][1]=$string;
+                $j++;
+                $i++;
             }
-            $j++;
-            $i++;
+            $imageAnnotator->close();
+            sort($resultats);
+            $res="";
+            for ($k=0 ; isset($resultats[$k]) ; $k++){
+                $res.=' '.$resultats[$k][1];
+            }
+            $order=array("\r\n", "\n", "\r");
+            $txt=trim(str_replace($order, ' ', $res));
+            $paragraph=trim(str_replace($order, "\n", $res));
+            $txt=str_replace('  ', ' ', $txt);
+            $this->ocr_paragraph=$paragraph;
+            $this->ocr_text=trim($txt);
         }
-        $imageAnnotator->close();
-        sort($resultats);
-        $res="";
-        for ($k=0 ; isset($resultats[$k]) ; $k++){
-            $res.=' '.$resultats[$k][1];
-        }
-        $order=array("\r\n", "\n", "\r");
-        $txt=trim(str_replace($order, ' ', $res));
-        $paragraph=trim(str_replace($order, "\n", $res));
-        $txt=str_replace('  ', ' ', $txt);
-        $this->ocr_paragraph=$paragraph;
-        $this->ocr_text=trim($txt);
-    }
     
     function original_text_pixel_height(){
         $a=(($this->y3+$this->y4)/2)-(($this->y1+$this->y2)/2);
@@ -286,11 +287,31 @@ class TextBlock {
         $this->background_color=$dominantColors[1];
     }*/
     
-    function dominant_color_alt(){
+    function dominant_color_alt_ori(){
         $pix1=array(($this->x1 + $this->x2)/2, ($this->y1 + $this->y2)/2-1);
         $pix2=array(($this->x2 + $this->x3)/2 +1, ($this->y2 + $this->y3)/2);
         $pix3=array(($this->x3 + $this->x4)/2, ($this->y3 + $this->y4)/2 +1);
         $pix4=array(($this->x4 + $this->x1)/2-1, ($this->y4 + $this->y1)/2);
+        $rgb1=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix1[0], $pix1[1]));
+        $rgb2=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix2[0], $pix2[1]));
+        $rgb3=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix3[0], $pix3[1]));
+        $rgb4=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix4[0], $pix4[1]));
+        $r=max($rgb1['red'],$rgb2['red'],$rgb3['red'],$rgb4['red']);
+        $g=max($rgb1['blue'],$rgb2['blue'],$rgb3['blue'],$rgb4['blue']);
+        $b=max($rgb1['green'],$rgb2['green'],$rgb3['green'],$rgb4['green']);
+        //        $r=($rgb1['red']+$rgb2['red']+$rgb3['red']+$rgb4['red'])/4;
+        //        $g=($rgb1['blue']+$rgb2['blue']+$rgb3['blue']+$rgb4['blue'])/4;
+        //        $b=($rgb1['green']+$rgb2['green']+$rgb3['green']+$rgb4['green'])/4;
+        
+        $this->background_color_alt=array($r,$g,$b);
+    }
+
+
+    function dominant_color_alt(){
+        $pix1=array($this->x1 , $this->y1 );
+        $pix2=array($this->x2 , $this->y2 );
+        $pix3=array($this->x3 , $this->y3 );
+        $pix4=array($this->x4 , $this->y4 );
         $rgb1=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix1[0], $pix1[1]));
         $rgb2=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix2[0], $pix2[1]));
         $rgb3=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix3[0], $pix3[1]));
@@ -326,7 +347,23 @@ class TextBlock {
     }
 
     //Reorder pixel coordinates and fix angle
-    private function reorder_points ($marge=3){
+    private function calculate_text_angle (){
+        $angle=round($this->pixels_angle2(($this->x1+$this->x4)/2, ($this->y1+$this->y4)/2,($this->x2+$this->x3)/2, ($this->y2+$this->y3)/2));
+        
+        $this->ori_point_to_reordered();
+        $rotate=$this->nb_rotate;
+        
+        if ($rotate ==0)
+            $this->text_angle=$angle;
+        if ($rotate ==1)
+            $this->text_angle=2*90-$angle;
+        if ($rotate ==2)
+            $this->text_angle=2*90+$angle;;
+        if ($rotate ==3)
+            $this->text_angle=3*90+(90-$angle);
+    }
+
+    public function ori_point_to_reordered ($marge=3){
         $rotate=0;
         $x1=$this->x1;
         $y1=$this->y1;
@@ -338,25 +375,26 @@ class TextBlock {
         $y4=$this->y4;
 
         while (
-        ( $x1 >=  $x2 ) ||
-        ( $y2 >= $y3) ||
-        ($x3 <= $x4) ||
-        ($y4 <= $y1)  ||
-        ($x4 +$marge< $x1) ||
-        ($y2 -$marge> $y1)
-        ){
-            $rotate++;
-            $tmpx=$x1;
-            $tmpy=$y1;
-            $x1=$x2;
-            $y1=$y2;
-            $x2=$x3;
-            $y2=$y3;
-            $x3=$x4;
-            $y3=$y4;
-            $x4=$tmpx;
-            $y4=$tmpy;
+            ( $x1 >=  $x2 ) ||
+            ( $y2 >= $y3) ||
+            ($x3 <= $x4) ||
+            ($y4 <= $y1)  ||
+            ($x4 +$marge< $x1) ||
+            ($y2 -$marge> $y1) 
+            ){
+                $rotate++;
+                $tmpx=$x1;
+                $tmpy=$y1;
+                $x1=$x2;
+                $y1=$y2;
+                $x2=$x3;
+                $y2=$y3;
+                $x3=$x4;
+                $y3=$y4;
+                $x4=$tmpx;
+                $y4=$tmpy;                
         }
+
         $this->ordered = array(
             'x1'=>$x1,
             'y1'=>$y1,
@@ -367,12 +405,43 @@ class TextBlock {
             'x4'=>$x4,
             'y4'=>$y4
         );
-        if ($rotate ==1)
-            $this->text_angle=2*90-$this->text_angle;
-        if ($rotate ==2)
-            $this->text_angle=2*90+$this->text_angle;;
-        if ($rotate ==3)
-            $this->text_angle=3*90+(90-$this->text_angle);  
+        
+        $this->nb_rotate=$rotate;
+    }
+
+    public function reorderpoint_to_ori (){
+        // A appeller après merge text box
+
+        $x1=$this->ordered['x1'];
+        $y1=$this->ordered['y1'];
+        $x2=$this->ordered['x2'];
+        $y2=$this->ordered['y2'];
+        $x3=$this->ordered['x3'];
+        $y3=$this->ordered['y3'];
+        $x4=$this->ordered['x4'];
+        $y4=$this->ordered['y4'];
+        
+        for ($i=0 ; $i<$this->nb_rotate; $i++)
+            {
+                $tmpx=$x1;
+                $tmpy=$y1;
+                $x1=$x4;
+                $y1=$y4;
+                $x4=$x3;
+                $y4=$y3;
+                $x3=$x2;
+                $y3=$y2;
+                $x2=$tmpx;
+                $y2=$tmpy;                
+        }
+        $this->x1=$x1;
+        $this->y1=$y1;
+        $this->x2=$x2;
+        $this->y2=$y2;
+        $this->x3=$x3;
+        $this->y3=$y3;
+        $this->x4=$x4;
+        $this->y4=$y4;
     }
 
     //Reorder pixel coordinates and fix angle
@@ -518,8 +587,15 @@ class TextBlock {
         "height" => $rbottom - $rtop + 1 );
       }
 
-    function expand_block_text($color_tolerance=0,$offset=0){
+    function expand_block_text($color_tolerance=50,$offset=4){
+
         $image=cloneImg($this->mother_image);
+        $black = imagecolorallocate($image, 0, 0, 0);
+
+        imagefilledellipse($image, $this->x1, $this->y1, 3, 3, $black);
+        imagefilledellipse($image, $this->x2, $this->y2, 3, 3, $black);
+        imagefilledellipse($image, $this->x3, $this->y3, 3, 3, $black);
+        imagefilledellipse($image, $this->x4, $this->y4, 3, 3, $black);
         $background=$this->background_color_alt;
         
         if ($this->text_angle !=0){
@@ -527,8 +603,8 @@ class TextBlock {
             $xmax_ori=imagesx($image);
             $ymax_ori=imagesy($image);
             
-            $diago=round(sqrt($xmax_ori*$xmax_ori+$ymax_ori*$ymax_ori));
-            
+            $diago_prec=(sqrt($xmax_ori*$xmax_ori+$ymax_ori*$ymax_ori));
+            $diago=round($diago_prec);
             $tmpimg=imagecreatetruecolor($diago,$diago);
 
             $white = imagecolorallocate($tmpimg, 255,255,255);
@@ -540,33 +616,45 @@ class TextBlock {
             imagefilledrectangle($tmpimg, 0,0,$diago-1,$diago-1,$white);
             imagecopy ( $tmpimg, $image , ($diago-$xmax_ori)/2, ($diago-$ymax_ori)/2 , 0 , 0 , $xmax_ori, $ymax_ori);
             imageellipse($tmpimg, $diago/2, $diago/2, $diago-1, $diago-1, $black);
-//            imagewrite($tmpimg,"test/".$this->text_angle."-ori.jpg",100);
+            imagerectangle (  $tmpimg , $diago/2-4 , $diago/2-4 , $diago/2+4 , $diago/2+4, $blue );
 
-            $x_offset=($diago-$xmax_ori)/2;
-            $y_offset=($diago-$ymax_ori)/2;
 
-            $background=$this->background_color_alt;
-            $x1=$this->ordered['x1']+$x_offset;
-            $y1=$this->ordered['y1']+$y_offset;
-            $x2=$this->ordered['x2']+$x_offset;
-            $y2=$this->ordered['y2']+$y_offset;
-            $x3=$this->ordered['x3']+$x_offset;
-            $y3=$this->ordered['y3']+$y_offset;
-            $x4=$this->ordered['x4']+$x_offset;
-            $y4=$this->ordered['y4']+$y_offset;
-           // echo "x1:$x1 y1:$y1 x2:$x2 y2:$y2 x3:$x3 y3:$y3 x4:$x4 y4:$y4\n";
+
+            
+
+            // echo "x1:$x1 y1:$y1 x2:$x2 y2:$y2 x3:$x3 y3:$y3 x4:$x4 y4:$y4\n";
             //imagepolygon($image,array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4),4,$green);
 
             imagesetinterpolation ( $image ,  IMG_NEAREST_NEIGHBOUR);
 
             $image=imagerotate ($tmpimg , 0 - $this->text_angle , $white );
             $tmpimg=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0.1, $white);
-            imagewrite($tmpimg,"test/".$this->text_angle."-crop.jpg",100);
             
-            $a=rotate($x1,$y1,$diago/2,$diago/2,$this->text_angle);
-            $b=rotate($x2,$y2,$diago/2,$diago/2,$this->text_angle);
-            $c=rotate($x3,$y3,$diago/2,$diago/2,$this->text_angle);
-            $d=rotate($x4,$y4,$diago/2,$diago/2,$this->text_angle);
+            $xmax=imagesx($tmpimg);
+            $ymax=imagesy($tmpimg);
+
+            $x_offset=($xmax-$xmax_ori)/2;
+            $y_offset=($ymax-$ymax_ori)/2;
+
+            $this->reorderpoint_to_ori();
+
+            $x1=$this->x1+$x_offset;
+            $y1=$this->y1+$y_offset;
+            $x2=$this->x2+$x_offset;
+            $y2=$this->y2+$y_offset;
+            $x3=$this->x3+$x_offset;
+            $y3=$this->y3+$y_offset;
+            $x4=$this->x4+$x_offset;
+            $y4=$this->y4+$y_offset;
+
+            imagerectangle ($tmpimg , $xmax/2-2 , $ymax/2-2 , $xmax/2+2 , $ymax/2+2, $blue );
+
+            //imagewrite($tmpimg,"test/".$this->text_angle."-crop.jpg",100);
+            
+            $a=rotate($x1,$y1,$xmax/2,$ymax/2,$this->text_angle);
+            $b=rotate($x2,$y2,$xmax/2,$ymax/2,$this->text_angle);
+            $c=rotate($x3,$y3,$xmax/2,$ymax/2,$this->text_angle);
+            $d=rotate($x4,$y4,$xmax/2,$ymax/2,$this->text_angle);
 
             $x1=$a[0] - $offset;
             $y1=$a[1] - $offset;
@@ -576,6 +664,7 @@ class TextBlock {
             $y3=$c[1] + $offset;
             $x4=$d[0] - $offset;
             $y4=$d[1] + $offset;
+            
            // imagerectangle (  $image , $x1-1 , $y1-1 , $x3+1 , $y3+1, $blue );
           // echo "x1:$x1 y1:$y1 x2:$x2 y2:$y2 x3:$x3 y3:$y3 x4:$x4 y4:$y4\n";
            //echo "angle:".$this->text_angle."\n";
@@ -620,14 +709,14 @@ class TextBlock {
             $y4 =$y3;
         }else {$dobottom=false;}
         
-        echo "angle:".$this->text_angle." x1:$x1 y1:$y1 x2:$x2 y2:$y2 x3:$x3 y3:$y3 x4:$x4 y4:$y4\n";
+        //echo "angle:".$this->text_angle." x1:$x1 y1:$y1 x2:$x2 y2:$y2 x3:$x3 y3:$y3 x4:$x4 y4:$y4\n";
 
         //We expand each block side 1px per 1 px, so  we keep the original textbolck center
         while ( $doleft && $doright && (min($x1,$x4) > 0) && (max($x2,$x3) < $xmax-1)) {
             //doleft
             $x=$x1-1;
             for ($y=max($y1,$y4); ($y >= min($y1,$y4)) && $doleft; $y-- ){
-                echo "doleft";
+                //echo "doleft";
                 $rgb=imagecolorat($tmpimg,$x,$y);
                 $colors=imagecolorsforindex($tmpimg,$rgb);
                 if ( 
@@ -647,7 +736,7 @@ class TextBlock {
             //doright
             $x=$x2+1;
             for ($y=min($y2,$y3); ($y <= max($y3,$y3)) && $doright; $y++ ){
-                echo "doright";
+                //echo "doright";
                 $rgb=imagecolorat($tmpimg,$x,$y);
                 $colors=imagecolorsforindex($tmpimg,$rgb);
                 if ( 
@@ -678,11 +767,11 @@ class TextBlock {
                         (abs($colors['blue'] - $background[2]) >$color_tolerance))
                         {
                             $dotop =false;
-                        }else{
+                        } /*else{
                             if (($this->text_angle >=180) &&($this->text_angle <270 )){
                                 echo "x:$x y:$y angle:".$this->text_angle."r:".$colors['red']." g:".$colors['green']."b:".$colors['blue']."\n";    
                             }
-                        }
+                        }*/
                     }
                 if ($dotop ){
                     $y1=$y;
@@ -712,10 +801,14 @@ class TextBlock {
                 }
             }
             if ($this->text_angle != 0) {
-                $a=rotate($x1,$y1,$diago/2,$diago/2,0-$this->text_angle);
-                $b=rotate($x2,$y2,$diago/2,$diago/2,0-$this->text_angle);
-                $c=rotate($x3,$y3,$diago/2,$diago/2,0-$this->text_angle);
-                $d=rotate($x4,$y4,$diago/2,$diago/2,0-$this->text_angle);
+                $a=rotate($x1,$y1,$xmax/2,$ymax/2,0-$this->text_angle);
+                $b=rotate($x2,$y2,$xmax/2,$ymax/2,0-$this->text_angle);
+                $c=rotate($x3,$y3,$xmax/2,$ymax/2,0-$this->text_angle);
+                $d=rotate($x4,$y4,$xmax/2,$ymax/2,0-$this->text_angle);
+
+                $tmpimg=cloneImg($this->mother_image);
+                imagepolygon($tmpimg,array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4),4,$blue);
+                //imagewrite($tmpimg,"test/".$this->text_angle."-expanded.jpg",100);
 
                 $x1=$a[0]-$x_offset;
                 $y1=$a[1]-$y_offset;
@@ -725,12 +818,20 @@ class TextBlock {
                 $y3=$c[1]-$y_offset;
                 $x4=$d[0]-$x_offset;
                 $y4=$d[1]-$y_offset;
-                
-                $tmpimg=cloneImg($this->mother_image);
-                imagepolygon($tmpimg,array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4),4,$blue);
-                imagewrite($tmpimg,"test/".$this->text_angle."-expanded.jpg",100);
-    
+                    
         }
+
+        $this->x1=$x1;
+        $this->y1=$y1;
+        $this->x2=$x2;
+        $this->y2=$y2;
+        $this->x3=$x3;
+        $this->y3=$y3;
+        $this->x4=$x4;
+        $this->y4=$y4;
+        $this->ori_point_to_reordered();
+
+        /*
         $this->ordered['x1']=$x1;
         $this->ordered['y1']=$y1;
         $this->ordered['x2']=$x2;
@@ -738,7 +839,17 @@ class TextBlock {
         $this->ordered['x3']=$x3;
         $this->ordered['y3']=$y3;
         $this->ordered['x4']=$x4;
-        $this->ordered['y4']=$y4;
+        $this->ordered['y4']=$y4;*/
+
+        $image=cloneImg($this->mother_image);
+        $red = imagecolorallocate($image, 255,0,0);
+        $blue = imagecolorallocate($image, 0,0,255);
+
+            imagefilledellipse($image, $x1, $y1, 7, 7, $blue);
+            imagefilledellipse($image, $x2, $y2, 7, 7, $red);
+            imagefilledellipse($image, $x3, $y3, 7, 7, $red);
+            imagefilledellipse($image, $x4, $y4, 7, 7, $red);
+            imagewrite($image,"test/".$this->text_angle."-ori.jpg",100);
         }
 
         function draw_boxes2 ($colorid=0, $offset=0) {
@@ -753,11 +864,11 @@ class TextBlock {
             $linecolor=$color[$colorid];
             
             imageline ( $image ,  $this->ordered['x1'] -$offset, $this->ordered['y1'] -$offset, $this->ordered['x2'] +$offset, $this->ordered['y2'] -$offset, $linecolor);
-            imageline ( $image ,  $this->ordered['x2'] +$offset, $this->ordered['y2'] -$offset, $this->ordered['x3'] +$offset, $this->ordered['y3']+$offset , $linecolor);
-            imageline ( $image ,  $this->ordered['x3'] +$offset, $this->ordered['y3'] +$offset, $this->ordered['x4'] -$offset, $this->ordered['y4']+$offset , $linecolor);
-            imageline ( $image ,  $this->ordered['x4'] -$offset, $this->ordered['y4'] +$offset, $this->ordered['x1'] -$offset, $this->ordered['y1']-$offset , $linecolor);
+            imageline ( $image ,  $this->ordered['x2'] +$offset, $this->ordered['y2'] -$offset, $this->ordered['x3'] +$offset, $this->ordered['y3'] +$offset , $linecolor);
+            imageline ( $image ,  $this->ordered['x3'] +$offset, $this->ordered['y3'] +$offset, $this->ordered['x4'] -$offset, $this->ordered['y4'] +$offset , $linecolor);
+            imageline ( $image ,  $this->ordered['x4'] -$offset, $this->ordered['y4'] +$offset, $this->ordered['x1'] -$offset, $this->ordered['y1'] -$offset , $linecolor);
             @mkdir("dump");
-            @imagejpeg($image,'dump/boxes'.$this->text_angle.'-'.$colorid.'--'.'.jpg');
+            @imagejpeg($image,'dump/boxes'.$this->text_angle.'-'.$colorid.'-ori'.$this->ori_angle.'-rotate'.$this->nb_rotate.'.jpg');
           }
     }
                 

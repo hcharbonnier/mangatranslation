@@ -80,7 +80,8 @@ function cloneImg($img){
           if ($angle > 180)
             $angle=0-(360-$angle);
             
-        $angle =$angle* pi() / 180;
+//        $angle =$angle* pi() / 180;
+        $angle=deg2rad($angle);
         $cos_angle=cos($angle);
         $sin_angle=sin($angle);
 
