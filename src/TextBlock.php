@@ -139,29 +139,27 @@ class TextBlock {
             return $resultat;
         }
         
-       // $width=max($width-(2*$border), 2*$border+8);
-        //$height=max($height-(2*$border), 2*$border+8);
         $imgx=max(imagesx($this->mother_image),imagesy($this->mother_image));
         $imgy=$imgx;
-            $tmpimage=imagecreatetruecolor($imgx, $imgy);
-            $white = imagecolorallocate($tmpimage, 255, 255, 255);
-            $black = imagecolorallocate($tmpimage, 0, 0, 0);
-            imagefilledrectangle($tmpimage, 0, 0, $imgx-1, $imgy-1, $black);
+        $tmpimage=imagecreatetruecolor($imgx, $imgy);
+        $white = imagecolorallocate($tmpimage, 255, 255, 255);
+        $black = imagecolorallocate($tmpimage, 0, 0, 0);
+        imagefilledrectangle($tmpimage, 0, 0, $imgx-1, $imgy-1, $black);
 
-            $pol=array(
-                $this->ordered['x1'],$this->ordered['y1'],
-                $this->ordered['x2'],$this->ordered['y2'],
-                $this->ordered['x3'],$this->ordered['y3'],
-                $this->ordered['x4'],$this->ordered['y4'],
-            );
+        $pol=array(
+            $this->ordered['x1'],$this->ordered['y1'],
+            $this->ordered['x2'],$this->ordered['y2'],
+            $this->ordered['x3'],$this->ordered['y3'],
+            $this->ordered['x4'],$this->ordered['y4'],
+        );
 
-            imagefilledpolygon($tmpimage, $pol, 4, $white);
-            if ($this->text_angle != 0)
-                $tmpimage=imagerotate( $tmpimage , 0- $this->text_angle ,  0 );
+        imagefilledpolygon($tmpimage, $pol, 4, $white);
+        if ($this->text_angle != 0)
+            $tmpimage=imagerotate( $tmpimage , 0- $this->text_angle ,  0 );
 
-            $tmpimage=imagecropauto($tmpimage,IMG_CROP_SIDES);
-            $width=max(imagesx($tmpimage)-(2*$border), 2*$border+8);
-            $height=max(imagesy($tmpimage)-(2*$border), 2*$border+8);
+        $tmpimage=imagecropauto($tmpimage,IMG_CROP_SIDES);
+        $width=max(imagesx($tmpimage)-(2*$border), 2*$border+8);
+        $height=max(imagesy($tmpimage)-(2*$border), 2*$border+8);
                     
         if ($font_size <=6)
         $font_size=7;
@@ -845,11 +843,11 @@ class TextBlock {
         $red = imagecolorallocate($image, 255,0,0);
         $blue = imagecolorallocate($image, 0,0,255);
 
-            imagefilledellipse($image, $x1, $y1, 7, 7, $blue);
-            imagefilledellipse($image, $x2, $y2, 7, 7, $red);
-            imagefilledellipse($image, $x3, $y3, 7, 7, $red);
-            imagefilledellipse($image, $x4, $y4, 7, 7, $red);
-            imagewrite($image,"test/".$this->text_angle."-ori.jpg",100);
+            //imagefilledellipse($image, $x1, $y1, 7, 7, $blue);
+            //imagefilledellipse($image, $x2, $y2, 7, 7, $red);
+            //imagefilledellipse($image, $x3, $y3, 7, 7, $red);
+            //imagefilledellipse($image, $x4, $y4, 7, 7, $red);
+            //imagewrite($image,"test/".$this->text_angle."-ori.jpg",100);
         }
 
         function draw_boxes2 ($colorid=0, $offset=0) {
@@ -867,8 +865,8 @@ class TextBlock {
             imageline ( $image ,  $this->ordered['x2'] +$offset, $this->ordered['y2'] -$offset, $this->ordered['x3'] +$offset, $this->ordered['y3'] +$offset , $linecolor);
             imageline ( $image ,  $this->ordered['x3'] +$offset, $this->ordered['y3'] +$offset, $this->ordered['x4'] -$offset, $this->ordered['y4'] +$offset , $linecolor);
             imageline ( $image ,  $this->ordered['x4'] -$offset, $this->ordered['y4'] +$offset, $this->ordered['x1'] -$offset, $this->ordered['y1'] -$offset , $linecolor);
-            @mkdir("dump");
-            @imagejpeg($image,'dump/boxes'.$this->text_angle.'-'.$colorid.'-ori'.$this->ori_angle.'-rotate'.$this->nb_rotate.'.jpg');
+            //@mkdir("dump");
+            //@imagejpeg($image,'dump/boxes'.$this->text_angle.'-'.$colorid.'-ori'.$this->ori_angle.'-rotate'.$this->nb_rotate.'.jpg');
           }
     }
                 

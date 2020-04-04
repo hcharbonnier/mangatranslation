@@ -215,8 +215,8 @@ class MangaImage
       imageline ( $image ,  $text_block->ordered['x4'] -$offset, $text_block->ordered['y4'] +$offset, $text_block->ordered['x1'] -$offset, $text_block->ordered['y1']-$offset , $linecolor);
     }
     $this->image_drawn=$image;
-    @mkdir("dump");
-    @imagejpeg($this->image_drawn,'dump/boxes'.basename($fileName).'-'.$colorid.'-'.'.jpg');
+//    @mkdir("dump");
+//    @imagejpeg($this->image_drawn,'dump/boxes'.basename($fileName).'-'.$colorid.'-'.'.jpg');
   }
   
   function draw_boxes_inimage ($image, $color=0, $offset=0) {
@@ -395,6 +395,7 @@ class MangaImage
     foreach ($this->text_blocks as $block) {
       $black = imagecolorallocate($this->final_image, 0, 0, 0);
       $red = imagecolorallocate($this->final_image, 255, 0, 0);
+      $green = imagecolorallocate($this->final_image, 0, 255, 0);
       $yellow = imagecolorallocate($this->final_image, 255, 255, 0);
       
       $translation_width=$block->translation_width;
@@ -405,23 +406,44 @@ class MangaImage
 
 
       //A VERIFIER
-      $Ix=$block->ordered['x1']+($block_width-$translation_width)/2;
-      $Iy=$block->ordered['y1']+$block->translation_top_offset+($block_height-$translation_height)/2 ;
+      $Ix=$block->x1+($block_width-$translation_width)/2;
+      $Iy=$block->y1+$block->translation_top_offset+($block_height-$translation_height)/2 ;
+      $tmpx=$Ix;
+      $tmpy=$Iy;
+      imagefilledellipse($this->final_image, $Ix, $Iy, 7, 7, $green);
 
-      $insert=rotate($Ix,$Iy,$block->x1,$block->y1,$block->text_angle);
+      if ($block->text_angle !=0) {
+ //       if ($block->text_angle ==235)
+ //         $block->text_angle=125; 
 
+        $insert=rotate($Ix,$Iy, $block->x1,$block->y1,0- $block->text_angle);
+        $Ix = $insert[0];
+        $Iy = $insert[1];
+      }
+
+      //$insert=rotate($Ix,$Iy,$block->x1,$block->y1,$block->text_angle);
+
+      echo "_____\n";
+      echo "angle:".$block->text_angle." translation_width:$translation_height translation_height:$translation_height\n";
+      echo "block_width:$block_width block_height:$block_height\n";
+      echo "translation_width:$translation_width translation_height:$translation_height\n";
+      echo "x1:".$block->x1." y1:". $block->y1." Ix:$Ix Iy:$Iy tmpx:$tmpx tmpy:$tmpy\n";
+      echo $block->formatted_text."\n";
       imagettftext (
         $this->final_image,
         $block->font_size,
         $block->text_angle,
         //$insert_x,
         //$insert_y,
-        $insert[0],
-        $insert[1],
+        $Ix,
+        $Iy,
         $black,
         $block->font,
         $block->formatted_text );
       }
+
+      imagefilledellipse($this->final_image, $Ix, $Iy, 7, 7, $black);
+
     }
 
     

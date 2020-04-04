@@ -77,8 +77,8 @@ function cloneImg($img){
       }
 
       function rotate ($x1,$y1, $x_centre,$y_centre, $angle) {
-          if ($angle > 180)
-            $angle=0-(360-$angle);
+         // if ($angle > 180)
+         //   $angle=0-(360-$angle);
             
 //        $angle =$angle* pi() / 180;
         $angle=deg2rad($angle);
