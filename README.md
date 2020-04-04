@@ -21,12 +21,10 @@ I am not a developper, so this project code might be really ugly. :)
 * OCR Text in textboxes
 * Remove old text from textboxes
 * Use Google API to translate
+* Expand textboxes if possible
 * Adapt translation font size to fit in textboxes
 * write translation in the corresponding textboxes
-
-## Specials features
-* Support external denoiser (ie: Waifu2x) to improve OCR performance
-* Support tilted textboxes
+* export image
 
 ## Known Issues
 * Let me know
@@ -39,7 +37,7 @@ create a composer.json file in your project, and add:
 {
     "minimum-stability": "dev",
     "require": {
-         "hcharbonnier/mangatranslation": ">=0.2.0"
+         "hcharbonnier/mangatranslation": ">=0.99.0"
     }
 }
 ```
@@ -69,17 +67,45 @@ require_once __DIR__ . '/vendor/autoload.php'; // Autoload files using Composer 
 use mangatranslation\MangaImage;
 use mangatranslation\TextBlock;
 
-$test = new MangaImage($argv[1],$argv[2] );
-
-//Optional
-$test->external_denoiser (
-    'cmd.exe /mnt/c/Users/Hugues/Downloads/waifu2x/waifu2x-converter-cpp.exe --force-OpenCL --model-dir \'C:\Users\Hugues\Downloads\waifu2x\models_rgb\' --scale-ratio 2 --noise-level 1 -m noise-scale -i _DENOISERINPUTFILE_ -o _DENOISEROUTPUTFILE_'
-);
-$test->load();
+$trans=new MangaImage($argv[1]);
+$trans->detect_block();
+$trans->merge_near_block();
+$trans->ocr();
+$trans->translate();
+$trans->clean_raw();
+$trans->write_translation();
+$trans->export($argv[2],90);
 
 ```
 Then run:
 ```sh
 $ export GOOGLE_APPLICATION_CREDENTIALS=PATH_TO_GOOGLE_PROJECT.json
 $ php example.php image.jpg translated.jpg
+```
+
+## Extra features
+Mangatranslation can be integrated with a custom frontend to perform better translation.
+This functions allow user to interact with the process:
+
+### Get list of textbox
+```php
+$trans->get_blocks() : array
+```
+### Manually specify additional a textbox
+```php
+$trans->add_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4) : void
+```
+### Get translation of textbox $id_block
+```php
+$trans->get_block_translation(int $id_block) : string
+```
+### Manually specify translation
+```php
+//to be call BEFORE translate() !!!
+$trans->set_block_translation(6,"Translated text") : void
+```
+### Manually specify cleaned raw image
+```php
+$trans->set_cleaned_raw("toto_clean.jpg") : void
+
 ```

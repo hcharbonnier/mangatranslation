@@ -111,7 +111,7 @@ class MangaImage
     return $this->text_blocks[$id]->get_translation();
   }
 
-  public function set_translation($id,$translation) {
+  public function set_block_translation($id,$translation) {
     return $this->text_blocks[$id]->set_translation($translation);
   }
 
