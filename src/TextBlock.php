@@ -50,9 +50,10 @@ class TextBlock {
     }
 
     public function process(){
+        
         $this->extract_bloc();
     //    $this->draw_boxes2(2,0);
-        $this->expand_block_text();
+       $this->expand_block_text();
     //    $this->draw_boxes2(3,0);
     }
 
@@ -264,11 +265,11 @@ class TextBlock {
         return $c;
     }
     
-    function find_font_size(){
+    function find_font_size($max_font_size=32){
         $nb_line=substr_count( $this->ocr_paragraph, "\n" )+1;
         $height_pixel=$this->original_text_pixel_height();
         $font_pixel_height=$height_pixel/$nb_line;
-        $this->original_font_size=round($font_pixel_height/2.2);
+        $this->original_font_size=min(round($font_pixel_height/2.2),$max_font_size);
     }
     
     /* function dominant_color(){
@@ -347,6 +348,13 @@ class TextBlock {
             $this->text_angle=2*90+$angle;;
         if ($rotate ==3)
             $this->text_angle=3*90+(90-$angle);
+
+        while ($this->text_angle >= 360)
+            $this->text_angle-=360;
+        
+        while ($this->text_angle <= -360)
+            $this->text_angle+=360;
+
     }
 
     public function ori_point_to_reordered ($marge=3){
@@ -542,6 +550,15 @@ class TextBlock {
 
     function expand_block_text($color_tolerance=50,$offset=4){
 
+        $x1=$this->x1;
+        $y1=$this->y1;
+        $x2=$this->x2;
+        $y2=$this->y2;
+        $x3=$this->x3;
+        $y3=$this->y3;
+        $x4=$this->x4;
+        $y4=$this->y4;
+        
         $image=cloneImg($this->mother_image);
         $black = imagecolorallocate($image, 0, 0, 0);
         $background=$this->background_color_alt;
