@@ -4,7 +4,7 @@ PHP manga automatic translator (Works with Google Cloud Platform)
 CPU Only, no cuda, no opencv, no machine learning
 
 ## Warning
-I am not a developper, so this project code might be really ugly. :)
+In order to get acceptable result, your manga/comic raw quality has to be perfect!! 
 
 ## Translation examples
 
