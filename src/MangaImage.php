@@ -257,7 +257,6 @@ class MangaImage
       $red = imagecolorallocate($this->cleaned_image, 255,0,0);
       $blue = imagecolorallocate($this->cleaned_image, 0,0,255);
       imagepolygon($this->cleaned_image,$polygon,4,$red);
-      imagefilledellipse($this->cleaned_image, $x1, $y1, 7, 7, $red);
       $polygon=array(
         $block->ordered['x1'],
         $block->ordered['y1'],
@@ -269,8 +268,6 @@ class MangaImage
         $block->ordered['y4'],
       );
       imagepolygon($this->cleaned_image,$polygon,4,$blue);
-      imagefilledellipse($this->cleaned_image, $block->ordered['x1'], $block->ordered['y1'], 7, 7, $blue);
-
     }
   }
 
@@ -406,7 +403,6 @@ class MangaImage
       $Iy=$block->y1+$block->translation_top_offset+($block_height-$translation_height)/2 ;
       $tmpx=$Ix;
       $tmpy=$Iy;
-      imagefilledellipse($this->final_image, $Ix, $Iy, 7, 7, $green);
 
       if ($block->text_angle !=0) {
         $insert=rotate($Ix,$Iy, $block->x1,$block->y1,0- $block->text_angle);
@@ -424,9 +420,6 @@ class MangaImage
         $block->font,
         $block->formatted_text );
       }
-
-      imagefilledellipse($this->final_image, $Ix, $Iy, 7, 7, $black);
-
     }
 
     

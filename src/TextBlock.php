@@ -542,11 +542,6 @@ class TextBlock {
 
         $image=cloneImg($this->mother_image);
         $black = imagecolorallocate($image, 0, 0, 0);
-
-        imagefilledellipse($image, $this->x1, $this->y1, 3, 3, $black);
-        imagefilledellipse($image, $this->x2, $this->y2, 3, 3, $black);
-        imagefilledellipse($image, $this->x3, $this->y3, 3, 3, $black);
-        imagefilledellipse($image, $this->x4, $this->y4, 3, 3, $black);
         $background=$this->background_color_alt;
         
         if ($this->text_angle !=0){
