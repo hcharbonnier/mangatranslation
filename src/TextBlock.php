@@ -722,9 +722,6 @@ class TextBlock {
                 $c=rotate($x3,$y3,$xmax/2,$ymax/2,0-$this->text_angle);
                 $d=rotate($x4,$y4,$xmax/2,$ymax/2,0-$this->text_angle);
 
-                $tmpimg=cloneImg($this->mother_image);
-                imagepolygon($tmpimg,array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4),4,$blue);
-
                 $x1=$a[0]-$x_offset;
                 $y1=$a[1]-$y_offset;
                 $x2=$b[0]-$x_offset;

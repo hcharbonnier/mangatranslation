@@ -253,21 +253,6 @@ class MangaImage
       $background = imagecolorallocate($this->cleaned_image, $r, $g, $b);
       $polygon=array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
       imagefilledpolygon($this->cleaned_image,$polygon,4,$background);
-
-      $red = imagecolorallocate($this->cleaned_image, 255,0,0);
-      $blue = imagecolorallocate($this->cleaned_image, 0,0,255);
-      imagepolygon($this->cleaned_image,$polygon,4,$red);
-      $polygon=array(
-        $block->ordered['x1'],
-        $block->ordered['y1'],
-        $block->ordered['x2'],
-        $block->ordered['y2'],
-        $block->ordered['x3'],
-        $block->ordered['y3'],
-        $block->ordered['x4'],
-        $block->ordered['y4'],
-      );
-      imagepolygon($this->cleaned_image,$polygon,4,$blue);
     }
   }
 
