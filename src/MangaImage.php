@@ -215,8 +215,6 @@ class MangaImage
       imageline ( $image ,  $text_block->ordered['x4'] -$offset, $text_block->ordered['y4'] +$offset, $text_block->ordered['x1'] -$offset, $text_block->ordered['y1']-$offset , $linecolor);
     }
     $this->image_drawn=$image;
-//    @mkdir("dump");
-//    @imagejpeg($this->image_drawn,'dump/boxes'.basename($fileName).'-'.$colorid.'-'.'.jpg');
   }
   
   function draw_boxes_inimage ($image, $color=0, $offset=0) {
@@ -404,8 +402,6 @@ class MangaImage
       $block_height=round(distance($block->x4,$block->y4,$block->x1,$block->y1));
       $block_width=round(distance($block->x1,$block->y1,$block->x2,$block->y2));
 
-
-      //A VERIFIER
       $Ix=$block->x1+($block_width-$translation_width)/2;
       $Iy=$block->y1+$block->translation_top_offset+($block_height-$translation_height)/2 ;
       $tmpx=$Ix;
@@ -413,28 +409,15 @@ class MangaImage
       imagefilledellipse($this->final_image, $Ix, $Iy, 7, 7, $green);
 
       if ($block->text_angle !=0) {
- //       if ($block->text_angle ==235)
- //         $block->text_angle=125; 
-
         $insert=rotate($Ix,$Iy, $block->x1,$block->y1,0- $block->text_angle);
         $Ix = $insert[0];
         $Iy = $insert[1];
       }
 
-      //$insert=rotate($Ix,$Iy,$block->x1,$block->y1,$block->text_angle);
-
-      echo "_____\n";
-      echo "angle:".$block->text_angle." translation_width:$translation_height translation_height:$translation_height\n";
-      echo "block_width:$block_width block_height:$block_height\n";
-      echo "translation_width:$translation_width translation_height:$translation_height\n";
-      echo "x1:".$block->x1." y1:". $block->y1." Ix:$Ix Iy:$Iy tmpx:$tmpx tmpy:$tmpy\n";
-      echo $block->formatted_text."\n";
       imagettftext (
         $this->final_image,
         $block->font_size,
         $block->text_angle,
-        //$insert_x,
-        //$insert_y,
         $Ix,
         $Iy,
         $black,
