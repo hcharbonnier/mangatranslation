@@ -3,7 +3,7 @@ namespace mangatranslation;
 
 #require __DIR__ . '/vendor/autoload.php';
 
-require_once("funtions.php");
+require_once(__DIR__."/funtions.php");
 
 # imports the Google Cloud client library
 use Google\Cloud\Vision\V1\ImageAnnotatorClient;
@@ -51,7 +51,9 @@ class MangaImage
     $imageAnnotator = new ImageAnnotatorClient();
     $this->response = $imageAnnotator->textDetection(file_get_contents($this->path));
     $this->annotation = $this->response->getFullTextAnnotation();
-    $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
+    if ($this->annotation != null)
+      $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
+
   }
 /*  private function load_textblock(){
     foreach ($this->text_blocks as $text_block) {
@@ -165,6 +167,7 @@ class MangaImage
   //Get document find bounds and stock them in this->text_blocks
   function get_document_bounds($annotation, $feature) {
     $bound = [];
+    print_r($annotation);
     foreach ($annotation->getPages() as $page) {
       if ($feature == FEATURE_PAGE){
         $coord=$this->bound_to_coord($page->getBoundingBox());
