@@ -65,15 +65,15 @@ class TextBlock {
 
     public function translate(){
         //Translate string
-        $this->translated_text=$this->translate_string($this->ocr_text, "en");
-        //Get best format for translated string (size fonts, etc..)
-        $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
-        $this->translation_width = $formatted_text['width_px'];
-        $this->translation_height = $formatted_text['height_px'];
-        $this->translation_top_offset= $formatted_text['top'];
-        $this->translation_left_offset = $formatted_text['left'];
-        $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
-        $this->font_size=$formatted_text['size'];
+            $this->translated_text=$this->translate_string($this->ocr_text, "en");
+            //Get best format for translated string (size fonts, etc..)
+            $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
+            $this->translation_width = $formatted_text['width_px'];
+            $this->translation_height = $formatted_text['height_px'];
+            $this->translation_top_offset= $formatted_text['top'];
+            $this->translation_left_offset = $formatted_text['left'];
+            $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
+            $this->font_size=$formatted_text['size'];
     }
      
     public function get_block(){
@@ -109,14 +109,16 @@ class TextBlock {
     }
 
     private function translate_string ($text,$targetLanguage="en"){
-  
-        $translate = new TranslateClient();
-        $result = $translate->translate($text, [
-          'target' => $targetLanguage,
-          ]);
-          
-          return($result["text"]);
-        }  
+        if (!(isset($this->translated_text))) {
+            $translate = new TranslateClient();
+            $result = $translate->translate($text, [
+            'target' => $targetLanguage,
+            ]);
+            return($result["text"]);
+        } else {
+            return($this->translated_text);
+        }
+    }  
     // Find parameters to fit text in image
     function format_text( $font, $font_size, $text,$border=0) 
     {
