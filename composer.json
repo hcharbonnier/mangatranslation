@@ -15,9 +15,9 @@
          "google/cloud-translate":"^1.7.1"
     },
     "autoload": {
-         "classmap": [
-                   "src/"
-        ]
+         "psr-4": {
+            "hcharbonnier\\Mangatranslation\\": "src"
+         }
     },
     "require-dev": {
         "phpstan/phpstan": "^0.12.17",
