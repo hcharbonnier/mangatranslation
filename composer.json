@@ -16,7 +16,7 @@
     },
     "autoload": {
          "psr-4": {
-            "hcharbonnier\\Mangatranslation\\": "src"
+            "hcharbonnier\\mangatranslation\\": "src"
          }
     },
     "require-dev": {
