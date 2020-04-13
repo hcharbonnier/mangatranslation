@@ -1,6 +1,5 @@
 <?php 
-namespace mangatranslation;
-
+namespace hcharbonnier\mangatranslation;
 #require __DIR__ . '/vendor/autoload.php';
 
 require_once(__DIR__."/funtions.php");
@@ -16,6 +15,7 @@ class TextBlock {
     public $mother_image;
     public $path;
     public $mother_name;
+    public $mother_path;
     public $x1;
     public $y1;
     public $x2;
@@ -25,6 +25,7 @@ class TextBlock {
     public $x4;
     public $y4;
     public $ordered=array();
+    public $ori=array();
     public $nb_rotate=0;
     public $background_color_alt;
     public $ocr_text;
@@ -38,16 +39,32 @@ class TextBlock {
     public $translation_top_offset;
     public $translation_left_offset;
     public $original_font_size;
+    public $calculate_angle;
     
     public $font=__DIR__."/../fonts/animeace2_reg.ttf";
     
-    function __construct($mother_name,$motherimage,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4) {
-        
+    function __construct($mother_path,$motherimage,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$calculate_angle) {
+        $this->calculate_angle=$calculate_angle;
         $this->mother_image = cloneImg($motherimage);
-        $this->mother_name= $mother_name;
+        $this->mother_path= $mother_path;          
+        $this->mother_name= basename($mother_path);
+        
         $this->set_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
+        
         $this->dominant_color_alt();
     }
+
+    function get_image(){
+        if (@get_resource_type($this->image) != "gd")
+          $this->image=imagecreatefromany($this->path);
+        return $this->image;
+      }
+
+      function get_mother_image(){
+        if (@get_resource_type($this->mother_image) != "gd")
+          $this->mother_image=imagecreatefromany($this->mother_path);
+        return $this->mother_image;
+      }
 
     public function process(){
         
@@ -93,6 +110,14 @@ class TextBlock {
         return $this->translated_text;
     }
 
+    public function get_ocr(){
+        return $this->ocr_text;
+    }
+
+    public function get_image_path(){
+        return $this->path;
+    }
+
     public function set_translation($translation){
          $this->translated_text = $translation;
     }
@@ -106,7 +131,28 @@ class TextBlock {
         $this->y3 = $y3;
         $this->x4 = $x4;
         $this->y4 = $y4;
-        $this->calculate_text_angle();
+        $this->ori['x1']=$x1;
+        $this->ori['y1']=$y1;
+        $this->ori['x2']=$x2;
+        $this->ori['y2']=$y2;
+        $this->ori['x3']=$x3;
+        $this->ori['y3']=$y3;
+        $this->ori['x4']=$x4;
+        $this->ori['y4']=$y4;
+        
+        if ($this->calculate_angle)
+          $this->calculate_text_angle();
+        else {
+          $this->text_angle=0;
+          $this->ordered['x1']=$this->x1;
+          $this->ordered['y1']=$this->y1;
+          $this->ordered['x2']=$this->x2;
+          $this->ordered['y2']=$this->y2;
+          $this->ordered['x3']=$this->x3;
+          $this->ordered['y3']=$this->y3;
+          $this->ordered['x4']=$this->x4;
+          $this->ordered['y4']=$this->y4;
+        }
     }
 
     private function translate_string ($text,$targetLanguage="en"){
@@ -134,7 +180,7 @@ class TextBlock {
             return $resultat;
         }
         
-        $imgx=max(imagesx($this->mother_image),imagesy($this->mother_image));
+        $imgx=max(imagesx($this->get_mother_image()),imagesy($this->get_mother_image()));
         $imgy=$imgx;
         $tmpimage=imagecreatetruecolor($imgx, $imgy);
         $white = imagecolorallocate($tmpimage, 255, 255, 255);
@@ -220,7 +266,7 @@ class TextBlock {
         function detect_text()
         {
             ob_start(); // start a new output buffer
-            imagejpeg($this->image,NULL,100);
+            imagejpeg($this->get_image(),NULL,100);
             $image = ob_get_contents();
             ob_end_clean(); // stop this output buffer
             $resultats=array();
@@ -266,10 +312,12 @@ class TextBlock {
     }
     
     function find_font_size($max_font_size=32){
+        
         $nb_line=substr_count( $this->ocr_paragraph, "\n" )+1;
         $height_pixel=$this->original_text_pixel_height();
         $font_pixel_height=$height_pixel/$nb_line;
         $this->original_font_size=min(round($font_pixel_height/2.2),$max_font_size);
+
     }
     
     /* function dominant_color(){
@@ -285,10 +333,10 @@ class TextBlock {
         $pix2=array(($this->x2 + $this->x3)/2 +1, ($this->y2 + $this->y3)/2);
         $pix3=array(($this->x3 + $this->x4)/2, ($this->y3 + $this->y4)/2 +1);
         $pix4=array(($this->x4 + $this->x1)/2-1, ($this->y4 + $this->y1)/2);
-        $rgb1=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix1[0], $pix1[1]));
-        $rgb2=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix2[0], $pix2[1]));
-        $rgb3=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix3[0], $pix3[1]));
-        $rgb4=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix4[0], $pix4[1]));
+        $rgb1=imagecolorsforindex($this->get_mother_image(),imagecolorat($this->get_mother_image(), $pix1[0], $pix1[1]));
+        $rgb2=imagecolorsforindex($this->get_mother_image(),imagecolorat($this->get_mother_image(), $pix2[0], $pix2[1]));
+        $rgb3=imagecolorsforindex($this->get_mother_image(),imagecolorat($this->get_mother_image(), $pix3[0], $pix3[1]));
+        $rgb4=imagecolorsforindex($this->get_mother_image(),imagecolorat($this->get_mother_image(), $pix4[0], $pix4[1]));
         $r=max($rgb1['red'],$rgb2['red'],$rgb3['red'],$rgb4['red']);
         $g=max($rgb1['blue'],$rgb2['blue'],$rgb3['blue'],$rgb4['blue']);
         $b=max($rgb1['green'],$rgb2['green'],$rgb3['green'],$rgb4['green']);
@@ -302,10 +350,10 @@ class TextBlock {
         $pix2=array($this->x2 , $this->y2 );
         $pix3=array($this->x3 , $this->y3 );
         $pix4=array($this->x4 , $this->y4 );
-        $rgb1=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix1[0], $pix1[1]));
-        $rgb2=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix2[0], $pix2[1]));
-        $rgb3=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix3[0], $pix3[1]));
-        $rgb4=imagecolorsforindex($this->mother_image,imagecolorat($this->mother_image, $pix4[0], $pix4[1]));
+        $rgb1=imagecolorsforindex($this->get_mother_image(),imagecolorat($this->get_mother_image(), $pix1[0], $pix1[1]));
+        $rgb2=imagecolorsforindex($this->get_mother_image(),imagecolorat($this->get_mother_image(), $pix2[0], $pix2[1]));
+        $rgb3=imagecolorsforindex($this->get_mother_image(),imagecolorat($this->get_mother_image(), $pix3[0], $pix3[1]));
+        $rgb4=imagecolorsforindex($this->get_mother_image(),imagecolorat($this->get_mother_image(), $pix4[0], $pix4[1]));
         $r=max($rgb1['red'],$rgb2['red'],$rgb3['red'],$rgb4['red']);
         $g=max($rgb1['blue'],$rgb2['blue'],$rgb3['blue'],$rgb4['blue']);
         $b=max($rgb1['green'],$rgb2['green'],$rgb3['green'],$rgb4['green']);
@@ -335,26 +383,27 @@ class TextBlock {
 
     //Reorder pixel coordinates and fix angle
     private function calculate_text_angle (){
-        $angle=round($this->pixels_angle2(($this->x1+$this->x4)/2, ($this->y1+$this->y4)/2,($this->x2+$this->x3)/2, ($this->y2+$this->y3)/2));
-        $this->ori_point_to_reordered();
-        $rotate=$this->nb_rotate;
-        
-        if ($rotate ==0)
-            $this->text_angle=$angle;
-        if ($rotate ==1)
-            $this->text_angle=2*90-$angle;
-        if ($rotate ==2)
-            $this->text_angle=2*90+$angle;;
-        if ($rotate ==3)
-            $this->text_angle=3*90+(90-$angle);
+        if ($this->calculate_angle){
+            $angle=round($this->pixels_angle2(($this->x1+$this->x4)/2, ($this->y1+$this->y4)/2,($this->x2+$this->x3)/2, ($this->y2+$this->y3)/2));
+            $rotate=$this->nb_rotate;
+            
+            if ($rotate ==0)
+                $this->text_angle=$angle;
+            if ($rotate ==1)
+                $this->text_angle=2*90-$angle;
+            if ($rotate ==2)
+                $this->text_angle=2*90+$angle;;
+            if ($rotate ==3)
+                $this->text_angle=3*90+(90-$angle);
 
-        while ($this->text_angle >= 360){
-            $this->text_angle-=360;}
-        
-        while ($this->text_angle <= -360){
-            $this->text_angle+=360;
+            while ($this->text_angle >= 360){
+                $this->text_angle-=360;}
+            
+            while ($this->text_angle <= -360){
+                $this->text_angle+=360;
+            }
         }
-
+        $this->ori_point_to_reordered();
     }
 
     public function ori_point_to_reordered ($marge=3){
@@ -442,7 +491,7 @@ class TextBlock {
         //image crop don't work with text with angles
         // so we fill everythin wich is not text in white,
         // and then use autocrop
-        $image = cloneImg($this->mother_image);        
+        $image = cloneImg($this->get_mother_image());        
         $white   = imagecolorallocate($image, 255, 255, 255);
         $image_width = imagesx($image);
         $image_height = imagesy($image);
@@ -501,7 +550,9 @@ class TextBlock {
         imagefilledpolygon($image, $pol3, 5, $white);
         imagefilledpolygon($image, $pol4, 5, $white);
 
+        $this->path="uploads/".microtime().'.jpg';
         $this->image=imagecropauto($image,IMG_CROP_THRESHOLD, $threshold=0.1, $white);
+        imagewrite($this->image,$this->path,$quality=100);
     }
 
     //Calculate dimension of image generated from a string
@@ -558,7 +609,7 @@ class TextBlock {
         $x4=$this->x4;
         $y4=$this->y4;
         
-        $image=cloneImg($this->mother_image);
+        $image=cloneImg($this->get_mother_image());
         $black = imagecolorallocate($image, 0, 0, 0);
         $background=$this->background_color_alt;
         
@@ -759,15 +810,16 @@ class TextBlock {
         $this->y3=$y3;
         $this->x4=$x4;
         $this->y4=$y4;
-        $this->ori_point_to_reordered();
+        if ($this->text_angle !=0)
+            $this->ori_point_to_reordered();
 
-        $image=cloneImg($this->mother_image);
+        $image=cloneImg($this->get_mother_image());
         $red = imagecolorallocate($image, 255,0,0);
         $blue = imagecolorallocate($image, 0,0,255);
         }
 
         function draw_boxes2 ($colorid=0, $offset=0) {
-            $image=cloneImg($this->mother_image);
+            $image=cloneImg($this->get_mother_image());
 
             $color[0]= imagecolorallocate($image, 0, 0, 0);
             $color[1]= imagecolorallocate($image, 255, 0, 0);

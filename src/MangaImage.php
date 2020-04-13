@@ -1,5 +1,5 @@
 <?php 
-namespace mangatranslation;
+namespace hcharbonnier\mangatranslation;
 
 #require __DIR__ . '/vendor/autoload.php';
 
@@ -19,11 +19,15 @@ class MangaImage
 {
   public $path=null;
   private $image=null;
+  private $image_width=10;
+  private $image_height=10;
   private $image_drawn=null;
   public $text_blocks=[];
   public $textbox_merge_tolerance=20;
   private $cleaned_image=null;
+  private $cleaned_image_path=null;
   private $final_image=null;
+  private $final_image_path=null;
   private $response=null;
   private $annotation=null;
   private $denoiser=array("enable" => false);
@@ -32,6 +36,8 @@ class MangaImage
   function __construct($path) {
     $this->path = $path;
     $this->image = imagecreatefromany($this->path);
+    $this->image_width=imagesx($this->get_image());
+    $this->image_height=imagesy($this->get_image());
   }
   
 
@@ -55,6 +61,15 @@ class MangaImage
       $this->get_document_bounds($this->annotation, FEATURE_BLOCK);
     }
   }
+
+  public function get_width(){
+    return $this->image_width;
+  }
+
+  public function get_height(){
+    return $this->image_height;
+  }
+
 /*  private function load_textblock(){
     foreach ($this->text_blocks as $text_block) {
       $text_block->process();
@@ -75,9 +90,9 @@ class MangaImage
   }
 
   public function merge_near_block(){
-    $this->draw_boxes2(cloneImg($this->image),0,0);
+    $this->draw_boxes2(cloneImg($this->get_image()),0,0);
     $this->merge_similar_bloc(20);
-    $this->draw_boxes2(cloneImg($this->image),1,1);
+    $this->draw_boxes2(cloneImg($this->get_image()),1,1);
   }
 
   /*private function process_text_blocks(){
@@ -88,11 +103,12 @@ class MangaImage
   }*/
 
   public function export($path,$quality=75){
-    imagewrite($this->final_image,$path,$quality);
+    imagewrite($this->get_final_image(),$path,$quality);
   }
 
   public function get_blocks(){
     $i=0;
+    $res=null;
     foreach ($this->text_blocks as $text_block) {
       $res[$i]= $text_block->get_block();
       $i++;
@@ -104,14 +120,23 @@ class MangaImage
     $this->text_blocks[$id]->set_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
   }
 
-  public function add_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4){
+  function get_image(){
+    if (@get_resource_type($this->image) != "gd")
+      $this->image=imagecreatefromany($this->path);
+    return $this->image;
+  }
+
+  public function add_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$calculate_angle){
     if ( !(
       (distance ($x1,$y1,$x2,$y2) <4) ||
       (distance ($x2,$y2,$x3,$y3) <4) ||
       (distance ($x3,$y3,$x4,$y4) <4) ||
       (distance ($x4,$y4,$x1,$y1) <4) 
-    ))
-    array_push($this->text_blocks , new TextBlock(basename($this->path),$this->image,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4));
+    )){
+    array_push($this->text_blocks , new TextBlock($this->path,$this->get_image(),$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$calculate_angle));
+  } else {
+    echo "block to small!!!";
+  }
   }
 
 
@@ -119,12 +144,28 @@ class MangaImage
     return $this->text_blocks[$id]->get_translation();
   }
 
+  public function get_block_ocr($id) {
+    return $this->text_blocks[$id]->get_ocr();
+  }
+
+  public function get_block_image_path($id) {
+    return $this->text_blocks[$id]->get_image_path();
+  }
+
   public function set_block_translation($id,$translation) {
     return $this->text_blocks[$id]->set_translation($translation);
   }
 
-  public function set_cleaned_raw($path){
-    $this->cleaned_image = imagecreatefromany($this->path);
+  public function get_cleaned_image(){
+    if (@get_resource_type($this->cleaned_image) != "gd")
+      $this->cleaned_image=imagecreatefromany($this->cleaned_image_path);
+    return $this->cleaned_image;
+  }
+
+  public function get_final_image(){
+    if (@get_resource_type($this->final_image) != "gd")
+      $this->final_image=imagecreatefromany($this->final_image_path);
+    return $this->final_image;
   }
 
   private function denoise(){
@@ -176,27 +217,27 @@ class MangaImage
     foreach ($annotation->getPages() as $page) {
       if ($feature == FEATURE_PAGE){
         $coord=$this->bound_to_coord($page->getBoundingBox());
-        $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+        $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
       }
       foreach ($page->getBlocks() as $block) {
         if ($feature == FEATURE_BLOCK) {
           $coord=$this->bound_to_coord($block->getBoundingBox());
-          $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+          $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
         }
         foreach ($block->getParagraphs() as $paragraph) {
           if ($feature == FEATURE_PARA){
             $coord=$this->bound_to_coord($paragraph->getBoundingBox());
-            $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+            $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
           }
           foreach ($paragraph->getWords() as $word) {
             if ($feature == FEATURE_WORD){
               $coord=$this->bound_to_coord($word->getBoundingBox());
-              $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+              $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
             }
             foreach ($word->getSymbols() as $symbol) {
               if ($feature == FEATURE_SYMBOL){
                 $coord=$this->bound_to_coord($symbol->getBoundingBox());
-                $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+                $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
               }
             }
           }
@@ -244,7 +285,7 @@ class MangaImage
   }
   // remove existing text in manga image
   function clean_raw() {
-    $this->cleaned_image = cloneImg($this->image);
+    $this->cleaned_image = cloneImg($this->get_image());
     foreach ($this->text_blocks as $block) {
       $x1=$block->x1;
       $y1=$block->y1;
@@ -254,13 +295,14 @@ class MangaImage
       $y3=$block->y3;
       $x4=$block->x4;
       $y4=$block->y4;
-      #          print_r($block);
       $r=$block->background_color_alt[0];
       $g=$block->background_color_alt[1];
       $b=$block->background_color_alt[2];
       $background = imagecolorallocate($this->cleaned_image, $r, $g, $b);
       $polygon=array($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
       imagefilledpolygon($this->cleaned_image,$polygon,4,$background);
+      $this->cleaned_image_path="uploads/".microtime().".jpg";
+      imagewrite($this->cleaned_image,$this->cleaned_image_path,$quality=100);
     }
   }
 
@@ -320,6 +362,8 @@ class MangaImage
           $this->text_blocks[$i]->ordered['x4']=(min($jx4,$ix4));
           $this->text_blocks[$i]->ordered['y4']=(max($jy4,$iy4));
           $this->text_blocks[$i]->reorderpoint_to_ori();
+          $this->text_blocks[$i]->calculate_angle = $this->text_blocks[$i]->calculate_angle && $this->text_blocks[$j]->calculate_angle;
+
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
           $j--;
@@ -339,6 +383,7 @@ class MangaImage
           $this->text_blocks[$i]->ordered['x4']=(min($jx4,$ix4));
           $this->text_blocks[$i]->ordered['y4']=(max($jy4,$iy4));
           $this->text_blocks[$i]->reorderpoint_to_ori();
+          $this->text_blocks[$i]->calculate_angle = $this->text_blocks[$i]->calculate_angle && $this->text_blocks[$j]->calculate_angle;
           
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
@@ -367,6 +412,7 @@ class MangaImage
           $this->text_blocks[$i]->ordered['x4']=min($ix4,$jx4);
           $this->text_blocks[$i]->ordered['y4']=max($jy4,$iy4);
           $this->text_blocks[$i]->reorderpoint_to_ori();
+          $this->text_blocks[$i]->calculate_angle = $this->text_blocks[$i]->calculate_angle && $this->text_blocks[$j]->calculate_angle;
           
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
@@ -379,7 +425,7 @@ class MangaImage
 
   //write translated text over cleaned image
   function write_translation() {
-    $this->final_image = cloneImg($this->cleaned_image);
+    $this->final_image = cloneImg($this->get_cleaned_image());
     foreach ($this->text_blocks as $block) {
       $black = imagecolorallocate($this->final_image, 0, 0, 0);
       $red = imagecolorallocate($this->final_image, 255, 0, 0);
@@ -413,10 +459,10 @@ class MangaImage
         $block->font,
         $block->formatted_text );
       }
+
+      
+      $this->final_image_path="uploads/".microtime().".jpg";
+      imagewrite($this->final_image,$this->final_image_path,$quality=100);
     }
-
-    
-
-    
   }
   

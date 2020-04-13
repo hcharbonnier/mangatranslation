@@ -38,7 +38,7 @@ create a composer.json file in your project, and add:
 {
     "minimum-stability": "dev",
     "require": {
-         "hcharbonnier/mangatranslation": ">=0.99.0"
+         "hcharbonnier/mangatranslation": ">=1.0"
     }
 }
 ```
@@ -65,8 +65,7 @@ composer install
 <?php
 require_once __DIR__ . '/vendor/autoload.php'; // Autoload files using Composer autoload
 
-use mangatranslation\MangaImage;
-use mangatranslation\TextBlock;
+use hcharbonnier\mangatranslation\MangaImage;
 
 $trans=new MangaImage($argv[1]);
 $trans->detect_block();
@@ -100,10 +99,14 @@ $trans->add_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4) : void
 ```php
 $trans->get_block_translation(int $id_block) : string
 ```
+### Get OCR of textbox $id_block
+```php
+$trans->get_block_ocr(int $id_block) : string
+```
 ### Manually specify translation
 ```php
 //to be call BEFORE translate() !!!
-$trans->set_block_translation(6,"Translated text") : void
+$trans->set_block_translation(int $id_block,"Translated text") : void
 ```
 ### Manually specify cleaned raw image
 ```php
