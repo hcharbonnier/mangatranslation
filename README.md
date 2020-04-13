@@ -1,11 +1,15 @@
 # mangatranslation
-PHP manga automatic translator (Works with Google Cloud Platform)
+PHP manga automatic translator library (Works with Google Cloud Platform)
 
 CPU Only, no cuda, no opencv, no machine learning
 
 ## Warning
 * In order to get acceptable result, your manga/comic raw quality has to be perfect!! 
 * Google translate work well when translated from chinese(manhua), but not so well from Japanese(Manga)
+
+## Frontend
+If you want to test the library you can use the following example.php file or use the dedicated frontend :
+https://github.com/hcharbonnier/mangatranslation-frontend
 
 ## Translation examples
 
@@ -50,8 +54,9 @@ composer install
 ## Requirement
 * php-7.4 (not tested with php<7.4 but could work)
 * php-gd
+* php-openssl
 * bcmath
-* A google cloud platform project configured
+* A google cloud platform project configured with translate and vision enable.
  (https://cloud.google.com/dataproc/docs/guides/setup-project)
 
 ## Dev additionnal requirements
@@ -61,6 +66,7 @@ composer install
 * php-7.4-mbstring
 
 ## Example
+example.php
 ```php
 <?php
 require_once __DIR__ . '/vendor/autoload.php'; // Autoload files using Composer autoload
