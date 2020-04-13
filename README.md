@@ -50,6 +50,7 @@ create a composer.json file in your project, and add:
 then install depedencies:
 ```sh
 composer install
+mkdir uploads
 ```
 ## Requirement
 * php-7.4 (not tested with php<7.4 but could work)
