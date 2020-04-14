@@ -126,14 +126,14 @@ class MangaImage
     return $this->image;
   }
 
-  public function add_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4){
+  public function add_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$calculate_angle){
     if ( !(
       (distance ($x1,$y1,$x2,$y2) <4) ||
       (distance ($x2,$y2,$x3,$y3) <4) ||
       (distance ($x3,$y3,$x4,$y4) <4) ||
       (distance ($x4,$y4,$x1,$y1) <4) 
     )){
-    array_push($this->text_blocks , new TextBlock($this->path,$this->get_image(),$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4));
+    array_push($this->text_blocks , new TextBlock($this->path,$this->get_image(),$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$calculate_angle));
   } else {
     echo "block to small!!!";
   }
@@ -217,27 +217,27 @@ class MangaImage
     foreach ($annotation->getPages() as $page) {
       if ($feature == FEATURE_PAGE){
         $coord=$this->bound_to_coord($page->getBoundingBox());
-        $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+        $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
       }
       foreach ($page->getBlocks() as $block) {
         if ($feature == FEATURE_BLOCK) {
           $coord=$this->bound_to_coord($block->getBoundingBox());
-          $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+          $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
         }
         foreach ($block->getParagraphs() as $paragraph) {
           if ($feature == FEATURE_PARA){
             $coord=$this->bound_to_coord($paragraph->getBoundingBox());
-            $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+            $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
           }
           foreach ($paragraph->getWords() as $word) {
             if ($feature == FEATURE_WORD){
               $coord=$this->bound_to_coord($word->getBoundingBox());
-              $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+              $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
             }
             foreach ($word->getSymbols() as $symbol) {
               if ($feature == FEATURE_SYMBOL){
                 $coord=$this->bound_to_coord($symbol->getBoundingBox());
-                $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4']);
+                $this->add_block($coord['x1'],$coord['y1'],$coord['x2'],$coord['y2'],$coord['x3'],$coord['y3'],$coord['x4'],$coord['y4'],true);
               }
             }
           }
@@ -362,6 +362,7 @@ class MangaImage
           $this->text_blocks[$i]->ordered['x4']=(min($jx4,$ix4));
           $this->text_blocks[$i]->ordered['y4']=(max($jy4,$iy4));
           $this->text_blocks[$i]->reorderpoint_to_ori();
+          $this->text_blocks[$i]->calculate_angle = $this->text_blocks[$i]->calculate_angle && $this->text_blocks[$j]->calculate_angle;
 
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
@@ -382,6 +383,7 @@ class MangaImage
           $this->text_blocks[$i]->ordered['x4']=(min($jx4,$ix4));
           $this->text_blocks[$i]->ordered['y4']=(max($jy4,$iy4));
           $this->text_blocks[$i]->reorderpoint_to_ori();
+          $this->text_blocks[$i]->calculate_angle = $this->text_blocks[$i]->calculate_angle && $this->text_blocks[$j]->calculate_angle;
           
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
@@ -410,6 +412,7 @@ class MangaImage
           $this->text_blocks[$i]->ordered['x4']=min($ix4,$jx4);
           $this->text_blocks[$i]->ordered['y4']=max($jy4,$iy4);
           $this->text_blocks[$i]->reorderpoint_to_ori();
+          $this->text_blocks[$i]->calculate_angle = $this->text_blocks[$i]->calculate_angle && $this->text_blocks[$j]->calculate_angle;
           
           unset($this->text_blocks[$j]);
           $this->text_blocks = array_values($this->text_blocks);
