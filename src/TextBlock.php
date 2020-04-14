@@ -385,6 +385,7 @@ class TextBlock {
     private function calculate_text_angle (){
         if ($this->calculate_angle){
             $angle=round($this->pixels_angle2(($this->x1+$this->x4)/2, ($this->y1+$this->y4)/2,($this->x2+$this->x3)/2, ($this->y2+$this->y3)/2));
+            $this->ori_point_to_reordered();
             $rotate=$this->nb_rotate;
             
             if ($rotate ==0)
@@ -402,8 +403,10 @@ class TextBlock {
             while ($this->text_angle <= -360){
                 $this->text_angle+=360;
             }
+        } else {
+            $this->ori_point_to_reordered();
         }
-        $this->ori_point_to_reordered();
+        
     }
 
     public function ori_point_to_reordered ($marge=3){
