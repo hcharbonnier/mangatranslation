@@ -42,7 +42,7 @@ create a composer.json file in your project, and add:
 {
     "minimum-stability": "dev",
     "require": {
-         "hcharbonnier/mangatranslation": ">=1.1.1"
+         "hcharbonnier/mangatranslation": ">=1.2.0"
     }
 }
 ```
