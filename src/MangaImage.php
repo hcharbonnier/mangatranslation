@@ -31,6 +31,7 @@ class MangaImage
   private $response=null;
   private $annotation=null;
   private $denoiser=array("enable" => false);
+  private $translated=false;
   //public $output_file=null;
   
   function __construct($path) {
@@ -69,6 +70,9 @@ class MangaImage
   public function get_height(){
     return $this->image_height;
   }
+  public function get_cleaned_image_path(){
+    return $this->cleaned_image_path;
+  }
 
 /*  private function load_textblock(){
     foreach ($this->text_blocks as $text_block) {
@@ -77,10 +81,15 @@ class MangaImage
     $this->draw_boxes2(cloneImg($this->image),2,0);
   }*/
 
-  public function translate(){
+  public function translate($language="en"){
     foreach ($this->text_blocks as $text_block) {
-      $text_block->translate();
+      $text_block->translate($language);
     }
+    $this->translated=true;
+  }
+
+  public function is_translated(){
+    return $this->translated;
   }
 
   public function ocr(){
@@ -108,7 +117,7 @@ class MangaImage
 
   public function get_blocks(){
     $i=0;
-    $res=null;
+    $res=array();
     foreach ($this->text_blocks as $text_block) {
       $res[$i]= $text_block->get_block();
       $i++;
@@ -127,6 +136,8 @@ class MangaImage
   }
 
   public function add_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$calculate_angle){
+    if (! isset($this->text_blocks))
+      $this->text_blocks=array();
     if ( !(
       (distance ($x1,$y1,$x2,$y2) <4) ||
       (distance ($x2,$y2,$x3,$y3) <4) ||
@@ -134,11 +145,18 @@ class MangaImage
       (distance ($x4,$y4,$x1,$y1) <4) 
     )){
     array_push($this->text_blocks , new TextBlock($this->path,$this->get_image(),$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$calculate_angle));
-  } else {
-    echo "block to small!!!";
-  }
+    } else {
+      echo "block to small!!!";
+    }
   }
 
+  public function del_block($id){
+    unset($this->text_blocks[$id]);
+  }
+
+  public function del_blocks(){
+    unset($this->text_blocks);
+  }
 
   public function get_block_translation($id) {
     return $this->text_blocks[$id]->get_translation();
@@ -155,6 +173,9 @@ class MangaImage
   public function set_block_translation($id,$translation) {
     return $this->text_blocks[$id]->set_translation($translation);
   }
+  public function get_block_translation_paragraph($id) {
+    return $this->text_blocks[$id]->get_block_translation_paragraph($id);
+  }
 
   public function get_cleaned_image(){
     if (@get_resource_type($this->cleaned_image) != "gd")
@@ -166,6 +187,15 @@ class MangaImage
     if (@get_resource_type($this->final_image) != "gd")
       $this->final_image=imagecreatefromany($this->final_image_path);
     return $this->final_image;
+  }
+  public function get_text_angle($id){
+    return $this->text_blocks[$id]->get_text_angle();
+  }
+  public function get_font_size($id){
+    return $this->text_blocks[$id]->get_font_size();
+  }
+  public function get_image_path(){
+    return $this->path;
   }
 
   private function denoise(){

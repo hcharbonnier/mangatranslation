@@ -30,6 +30,7 @@ class TextBlock {
     public $background_color_alt;
     public $ocr_text;
     public $ocr_paragraph;
+    public $ocred=false;
     public $translated_text;
     public $formatted_text;
     public $font_size;
@@ -66,6 +67,19 @@ class TextBlock {
         return $this->mother_image;
       }
 
+    function get_text_angle(){
+        return $this->text_angle;
+    }
+    
+    function get_font_size(){
+        return $this->font_size;
+    }
+
+    function get_block_translation_paragraph(){
+        return $this->formatted_text;
+    }
+    
+
     public function process(){
         
         $this->extract_bloc();
@@ -75,24 +89,31 @@ class TextBlock {
     }
 
     public function ocr(){
-        $this->process();
-        $this->detect_text();
-        $this->find_font_size();
-        $this->font_size=$this->original_font_size;
+        if (! $this->ocred ){
+            $this->process();
+            $this->detect_text();
+            $this->find_font_size();
+            $this->font_size=$this->original_font_size;
+            $this->ocred=true;
+        }
     }
 
-    public function translate(){
+    public function translate($language="en"){
         //Translate string
-            $this->translated_text=$this->translate_string($this->ocr_text, "en");
-            //Get best format for translated string (size fonts, etc..)
-            $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
-            $this->translation_width = $formatted_text['width_px'];
-            $this->translation_height = $formatted_text['height_px'];
-            $this->translation_top_offset= $formatted_text['top'];
-            $this->translation_left_offset = $formatted_text['left'];
-            $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
-            $this->font_size=$formatted_text['size'];
+        if (! isset($this->translated_text)){
+            $this->translated_text=$this->translate_string($this->ocr_text, $language);
+        }
+        //Get best format for translated string (size fonts, etc..)
+            
+        $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
+        $this->translation_width = $formatted_text['width_px'];
+        $this->translation_height = $formatted_text['height_px'];
+        $this->translation_top_offset= $formatted_text['top'];
+        $this->translation_left_offset = $formatted_text['left'];
+        $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
+        $this->font_size=$formatted_text['size'];
     }
+
      
     public function get_block(){
         $res['x1']=$this->x1;
@@ -120,6 +141,7 @@ class TextBlock {
 
     public function set_translation($translation){
          $this->translated_text = $translation;
+         $this->translate();
     }
 
     public function set_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4){
@@ -419,13 +441,14 @@ class TextBlock {
         $y3=$this->y3;
         $x4=$this->x4;
         $y4=$this->y4;
-        while (
+        while ((
             ( $x1 >=  $x2 ) ||
             ( $y2 >= $y3) ||
             ($x3 <= $x4) ||
             ($y4 <= $y1)  ||
             ($x4 +$marge< $x1) ||
-            ($y2 -$marge> $y1) 
+            ($y2 -$marge> $y1) ) &&
+            ($rotate <4)
             ){
                 $rotate++;
                 $tmpx=$x1;
