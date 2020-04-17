@@ -42,7 +42,7 @@ create a composer.json file in your project, and add:
 {
     "minimum-stability": "dev",
     "require": {
-         "hcharbonnier/mangatranslation": ">=1.2.0"
+         "hcharbonnier/mangatranslation": ">=1.2.1"
     }
 }
 ```
@@ -76,7 +76,7 @@ use hcharbonnier\mangatranslation\MangaImage;
 
 $trans=new MangaImage($argv[1]);
 $trans->detect_block();
-$trans->merge_near_block();
+$trans->auto_merge_blocks();
 $trans->ocr();
 $trans->translate();
 $trans->clean_raw();

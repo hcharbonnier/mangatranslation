@@ -98,7 +98,7 @@ class MangaImage
     }
   }
 
-  public function merge_near_block(){
+  public function auto_merge_blocks(){
     $this->draw_boxes2(cloneImg($this->get_image()),0,0);
     $this->merge_similar_bloc(20);
     $this->draw_boxes2(cloneImg($this->get_image()),1,1);
@@ -151,7 +151,7 @@ class MangaImage
   }
 
   public function del_block($id){
-    unset($this->text_blocks[$id]);
+    array_splice($this->text_blocks,$id,1);
   }
 
   public function del_blocks(){
@@ -394,7 +394,7 @@ class MangaImage
           $this->text_blocks[$i]->reorderpoint_to_ori();
           $this->text_blocks[$i]->calculate_angle = $this->text_blocks[$i]->calculate_angle && $this->text_blocks[$j]->calculate_angle;
 
-          unset($this->text_blocks[$j]);
+          array_splice($this->text_blocks,$j,1);
           $this->text_blocks = array_values($this->text_blocks);
           $j--;
           continue;
@@ -415,7 +415,7 @@ class MangaImage
           $this->text_blocks[$i]->reorderpoint_to_ori();
           $this->text_blocks[$i]->calculate_angle = $this->text_blocks[$i]->calculate_angle && $this->text_blocks[$j]->calculate_angle;
           
-          unset($this->text_blocks[$j]);
+          array_splice($this->text_blocks,$j,1);
           $this->text_blocks = array_values($this->text_blocks);
           $j--;
           continue;
@@ -444,7 +444,7 @@ class MangaImage
           $this->text_blocks[$i]->reorderpoint_to_ori();
           $this->text_blocks[$i]->calculate_angle = $this->text_blocks[$i]->calculate_angle && $this->text_blocks[$j]->calculate_angle;
           
-          unset($this->text_blocks[$j]);
+          array_splice($this->text_blocks,$j,1);
           $this->text_blocks = array_values($this->text_blocks);
           $j--;
           continue;
@@ -452,6 +452,28 @@ class MangaImage
       }
     }
   }
+
+  function merge_blocks($id1,$id2) {
+    $block1=$this->text_blocks[$id1];
+    $block2=$this->text_blocks[$id2];
+
+    $block1->ordered['x1']=(min($block1->ordered['x1'],$block2->ordered['x1']));
+    $block1->ordered['y1']=(min($block1->ordered['y1'],$block2->ordered['y1']));
+    $block1->ordered['x2']=(max($block1->ordered['x2'],$block2->ordered['x2']));
+    $block1->ordered['y2']=(min($block1->ordered['y2'],$block2->ordered['y2']));
+    $block1->ordered['x3']=(max($block1->ordered['x3'],$block2->ordered['x3']));
+    $block1->ordered['y3']=(max($block1->ordered['y3'],$block2->ordered['y3']));
+    $block1->ordered['x4']=(min($block1->ordered['x4'],$block2->ordered['x4']));
+    $block1->ordered['y4']=(max($block1->ordered['y4'],$block2->ordered['y4']));
+    $block1->reorderpoint_to_ori();
+    $block1->calculate_angle = $block1->calculate_angle && $block2->calculate_angle;
+
+    array_splice($this->text_blocks,$id2,1);
+    $this->text_blocks = array_values($this->text_blocks);
+  }
+
+
+  
 
   //write translated text over cleaned image
   function write_translation() {
