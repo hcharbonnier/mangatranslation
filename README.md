@@ -32,7 +32,9 @@ https://github.com/hcharbonnier/mangatranslation-frontend
 * export image
 
 ## Known Issues
-* Let me know
+* Performance with big image
+* Font size detection accuracy is not ok
+* Ram consuption is high when working with big image
 
 ## Installation
 
