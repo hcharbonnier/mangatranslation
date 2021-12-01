@@ -46,7 +46,7 @@ class TextBlock {
     function __construct($mother_path,$motherimage,$x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4,$calculate_angle) {
         $this->calculate_angle=$calculate_angle;
         $this->mother_image = cloneImg($motherimage);
-        $this->mother_path= $mother_path;          
+        $this->mother_path= $mother_path;
         $this->mother_name= basename($mother_path);
         
         $this->set_block($x1,$y1,$x2,$y2,$x3,$y3,$x4,$y4);
@@ -81,17 +81,17 @@ class TextBlock {
         $this->font_size=$this->original_font_size;
     }
 
-    public function translate(){
+    public function translate($engine="google"){
         //Translate string
-            $this->translated_text=$this->translate_string($this->ocr_text, "en");
-            //Get best format for translated string (size fonts, etc..)
-            $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
-            $this->translation_width = $formatted_text['width_px'];
-            $this->translation_height = $formatted_text['height_px'];
-            $this->translation_top_offset= $formatted_text['top'];
-            $this->translation_left_offset = $formatted_text['left'];
-            $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
-            $this->font_size=$formatted_text['size'];
+        $this->translated_text=$this->translate_string($this->ocr_text, "en", $engine);
+        //Get best format for translated string (size fonts, etc..)
+        $formatted_text=$this->format_text( $this->font, $this->font_size, $this->translated_text,11);
+        $this->translation_width = $formatted_text['width_px'];
+        $this->translation_height = $formatted_text['height_px'];
+        $this->translation_top_offset= $formatted_text['top'];
+        $this->translation_left_offset = $formatted_text['left'];
+        $this->formatted_text=html_entity_decode($formatted_text['text'],ENT_QUOTES);
+        $this->font_size=$formatted_text['size'];
     }
      
     public function get_block(){
@@ -140,8 +140,9 @@ class TextBlock {
         $this->ori['x4']=$x4;
         $this->ori['y4']=$y4;
         
-        if ($this->calculate_angle)
+        if ($this->calculate_angle){
           $this->calculate_text_angle();
+        }
         else {
           $this->text_angle=0;
           $this->ordered['x1']=$this->x1;
@@ -155,15 +156,57 @@ class TextBlock {
         }
     }
 
-    private function translate_string ($text,$targetLanguage="en"){
-        if (!(isset($this->translated_text))) {
-            $translate = new TranslateClient();
-            $result = $translate->translate($text, [
-            'target' => $targetLanguage,
-            ]);
-            return($result["text"]);
-        } else {
+    private function translate_string ($text,$targetLanguage="en",$engine="google"){
+        $db = new \SQLite3(__DIR__.'/translate.db');
+        $db->exec("CREATE TABLE IF NOT EXISTS translation(string TEXT, translated TEXT)");
+        $res = $db->query("select translated from translation where string=\"".addslashes($text)."\"");
+
+        while ($row = $res->fetchArray()) {
+            $this->translated_text=stripslashes($row['translated']);
+            $db->close();
             return($this->translated_text);
+        }
+        switch ($engine) {
+            case "google":
+                if (!(isset($this->translated_text))) {
+                    $translate = new TranslateClient();
+                    $result = $translate->translate($text, [
+                    'target' => $targetLanguage,
+                    ]);
+                    $db->exec("INSERT INTO translation(string,translated) VALUES ('$text','".$result["text"]."')");
+                    $db->close();
+
+                    return($result["text"]);
+                } else {
+                    return($this->translated_text);
+                }
+                break;
+            case "deepl":$ch = curl_init();
+
+            curl_setopt($ch, CURLOPT_URL, 'https://api-free.deepl.com/v2/translate');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, "auth_key=".getenv('DEEPL_AUTH_KEY')."&text=$text&target_lang=$targetLanguage");
+
+            $headers = array();
+            $headers[] = 'Content-Type: application/x-www-form-urlencoded';
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+            $result = curl_exec($ch);
+            if (curl_errno($ch)) {
+                echo 'Error:' . curl_error($ch);
+            }
+            curl_close($ch);
+            $json=json_decode($result,true);
+            $res=$db->exec("INSERT INTO translation(string,translated) VALUES (\"".addslashes($text)."\",\"".addslashes($json["translations"][0]["text"])."\")");
+            if (! $res){
+                echo "error SQL:\n";
+                echo ("INSERT INTO translation(string,translated) VALUES (\"".addslashes($text)."\",\"".addslashes($json["translations"][0]["text"])."\")");
+                echo "\n";
+            }
+            $db->close();
+            return($json["translations"][0]["text"]);
+                break;
         }
     }  
     // Find parameters to fit text in image
@@ -396,7 +439,6 @@ class TextBlock {
                 $this->text_angle=2*90+$angle;;
             if ($rotate ==3)
                 $this->text_angle=3*90+(90-$angle);
-
             while ($this->text_angle >= 360){
                 $this->text_angle-=360;}
             
@@ -419,14 +461,16 @@ class TextBlock {
         $y3=$this->y3;
         $x4=$this->x4;
         $y4=$this->y4;
+        $i=0;
         while (
-            ( $x1 >=  $x2 ) ||
+            ( ( $x1 >=  $x2 ) ||
             ( $y2 >= $y3) ||
             ($x3 <= $x4) ||
             ($y4 <= $y1)  ||
             ($x4 +$marge< $x1) ||
-            ($y2 -$marge> $y1) 
+            ($y2 -$marge> $y1) ) && $i <4
             ){
+                $i++;
                 $rotate++;
                 $tmpx=$x1;
                 $tmpy=$y1;
@@ -437,7 +481,7 @@ class TextBlock {
                 $x3=$x4;
                 $y3=$y4;
                 $x4=$tmpx;
-                $y4=$tmpy;                
+                $y4=$tmpy;
             }
 
         $this->ordered = array(

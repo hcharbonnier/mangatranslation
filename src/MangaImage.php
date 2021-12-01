@@ -77,9 +77,10 @@ class MangaImage
     $this->draw_boxes2(cloneImg($this->image),2,0);
   }*/
 
-  public function translate(){
+  public function translate($engine="google"){
     foreach ($this->text_blocks as $text_block) {
-      $text_block->translate();
+      $text_block->translate($engine);
+
     }
   }
 
@@ -102,6 +103,14 @@ class MangaImage
     $this->draw_boxes2(cloneImg($this->image),2,0);
   }*/
 
+  public function remove_empty_block(){
+    for ($i=0;isset($this->text_blocks[$i]); $i++){
+      if (! isset($this->text_blocks[$i]->translated_text)){
+        unset($this->text_blocks[$i]);
+        $i--;
+      }
+    }
+  }
   public function export($path,$quality=75){
     imagewrite($this->get_final_image(),$path,$quality);
   }

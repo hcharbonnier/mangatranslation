@@ -1,10 +1,10 @@
 # mangatranslation
 PHP manga automatic translator library (Works with Google Cloud Platform)
 
-CPU Only, no cuda, no opencv, no machine learning
+CPU Only, no cuda, no opencv, no local machine learning
 
 ## Warning
-* In order to get acceptable result, your manga/comic raw quality has to be perfect!! 
+* In order to get acceptable result, your manga/comic raw quality has to be near perfect!! 
 * Google translate work well when translated from chinese(manhua), but not so well from Japanese(Manga)
 
 ## Frontend
@@ -25,7 +25,8 @@ https://github.com/hcharbonnier/mangatranslation-frontend
 * Detect font size
 * OCR Text in textboxes
 * Remove old text from textboxes
-* Use Google API to translate
+* Check in sqliteDB if we already know the translation for the current string
+* Use Google API to translate (or free Deepl API)
 * Expand textboxes if possible
 * Adapt translation font size to fit in textboxes
 * write translation in the corresponding textboxes
@@ -42,7 +43,7 @@ create a composer.json file in your project, and add:
 {
     "minimum-stability": "dev",
     "require": {
-         "hcharbonnier/mangatranslation": ">=1.0"
+         "hcharbonnier/mangatranslation": ">=1.3.0"
     }
 }
 ```
@@ -56,9 +57,12 @@ mkdir uploads
 * php-7.4 (not tested with php<7.4 but could work)
 * php-gd
 * php-openssl
-* bcmath
+* php-bcmath
+* php-curl
+* php-sqlite3
 * A google cloud platform project configured with translate and vision enable.
  (https://cloud.google.com/dataproc/docs/guides/setup-project)
+ * A free DeepL account if you prefer DeepL translation
 
 ## Dev additionnal requirements
 
@@ -78,7 +82,8 @@ $trans=new MangaImage($argv[1]);
 $trans->detect_block();
 $trans->merge_near_block();
 $trans->ocr();
-$trans->translate();
+$trans->translate("google");  // possible values are "google" (default) or "deepl" 
+$trans->remove_empty_block();
 $trans->clean_raw();
 $trans->write_translation();
 $trans->export($argv[2],90);
