@@ -4,6 +4,7 @@ PHP manga automatic translator library (Works with Google Cloud Platform)
 CPU Only, no cuda, no opencv, no local machine learning
 
 ## Warning
+* I am not a dev, this project work well, but the code quality is probably shi...
 * In order to get acceptable result, your manga/comic raw quality has to be near perfect!! 
 * Google translate work well when translated from chinese(manhua), but not so well from Japanese(Manga)
 
