@@ -126,13 +126,3 @@ $trans->set_block_translation(int $id_block,"Translated text") : void
 $trans->set_cleaned_raw("toto_clean.jpg") : void
 
 ```
-
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-PHHHQBCCPV"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-PHHHQBCCPV');
-</script>
